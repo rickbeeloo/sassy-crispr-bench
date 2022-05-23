@@ -1,0 +1,11 @@
+data/chrom_split
+data/hg38v34.*
+data/cas_guides_input_*
+data/curated_guides_w_PAM.fasta
+genome_library/
+out_dir/
+soft/
+.snakemake/
+Project.toml
+Manifest.toml
+
