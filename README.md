@@ -29,4 +29,3 @@ CRISPRITZ only recognizes .fa files and not .fasta files as input.
 Cas-offinder requires OpenCL, which is highly system and hardware specific, though it might already be installed and thus Cas-offinder ready to run. To check this the following command can be run to build and check Cas-offinder: . If the output recognizes devices under "Available devices list" Cas-offinder should be good to go. 
 CRISPRoffTargetHunter generates a large number of files in its build step. This can sometimes cause the computer to run out of memory. Rebooting has gotten rid of this issue. 
 
-
