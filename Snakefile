@@ -8,6 +8,8 @@ def get_input(wildcards):
 		input_list = (expand("out_dir/cas-offinder_out/out_dist{dist}_time.txt", dist=config["dist"]))
 	return input_list
 
+# Separate build and benchmark steps!!!
+
 rule all:
 	input:
 		get_input,
@@ -372,16 +374,16 @@ rule coh_search_dist_3:
                 "--distance 3 --detail {output.detail}; }} 2> {output.time}"
 
 rule coh_search_dist_4:
-        input:
-                "data/curated_guides_wo_PAM.txt"
-        output:
-                result="out_dir/coh_out/results/mot_dist_4_out.csv",
-                detail="out_dir/coh_out/results/mot_dist_4_detail.csv",
-                time="out_dir/coh_out/results/mot_dist_4_time.txt"
-        shell:
-                "{{ time ./soft/CRISPRofftargetHunter.jl/build/bin/CRISPRofftargetHunter "
-                "search out_dir/coh_out/db/motifDB_2/ 'motifDB' {input} {output.result} "
-                "--distance 4 --detail {output.detail}; }} 2> {output.time}"
+    input:
+        "data/curated_guides_wo_PAM.txt"
+    output:
+        result="out_dir/coh_out/results/mot_dist_4_out.csv",
+        detail="out_dir/coh_out/results/mot_dist_4_detail.csv",
+        time="out_dir/coh_out/results/mot_dist_4_time.txt"
+    shell:
+        "{{ time ./soft/CRISPRofftargetHunter.jl/build/bin/CRISPRofftargetHunter "
+    	"search out_dir/coh_out/db/motifDB_2/ 'motifDB' {input} {output.result} "
+    	"--distance 4 --detail {output.detail}; }} 2> {output.time}"
 
 #################################################
 #
