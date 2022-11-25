@@ -2,14 +2,10 @@ channels:
   - bioconda
   - conda-forge
 dependencies:
-  - snakemake-minimal >=5.24.1
-  - jinja2 =2.11
-  - networkx =2.5
-  - matplotlib =3.3
-  - graphviz =2.42
-  - bcftools =1.9
-  - samtools =1.9
+  - snakemake-minimal >=7.18.2
+  - bcftools =1.16
+  - samtools =1.16
   - calitas =1.0
-  - crispritz =2.6.5
-  - seqkit =2.2.0
+  - crispritz =2.6.6
+  - seqkit =2.3.1
   - java-jdk =8.0.112

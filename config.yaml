@@ -1,3 +1,4 @@
-dist: 1
+dist: 3
+prefix: 8
 cas: False
-coh: ["linear"]
+artemis: ["linearDB", "treeDB", "motifDB"]

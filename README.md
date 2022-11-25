@@ -7,16 +7,24 @@ Currently this pipeline builds and searches for off-target sites within the whol
 * CRISPRITZ
 * Cas-offinder
 * FlashFry
+* Calitas
 
 # Installation 
 
+Make sure to install mamba form mambaforge:
+
+```
+curl -L https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh -o Mambaforge-Linux-x86_64.sh
+bash Mambaforge-Linux-x86_64.sh
+```
+
 To execute the pipeline first build an environment (as per snakemake recommendations this step uses mamba):
 
-`mamba env create --name benchmark-pipeline --file environment.yaml`
+`mamba env create --name artemis-benchmark --file environment.yaml`
 
 Activate the environment:
 
-`conda activate benchmark-pipeline`
+`conda activate artemis-benchmark`
 
 To run the pipeline end-to-end use the command:
 
