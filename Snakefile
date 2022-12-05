@@ -4,11 +4,22 @@ configfile: "config.yaml"
 
 rule all:
     input:
-	    [
-			expand("out_dir/artemis_out/results/{db_kind}_{prefix}_{dist}_time.csv", db_kind=config["artemis"], prefix=config["prefix"], dist=config["dist"])
-		]
-		
-		
+        [
+            expand("out_dir/artemis_out/results/{db_kind}_{prefix}_{dist}_time.csv", 
+                db_kind=config["artemis"], prefix=config["prefix"], dist=config["dist"]),
+            expand("out_dir/crispritz_out/results/crispritz_{dist}_time.csv", 
+                dist=config["dist"]),
+            expand("out_dir/cas-offinder_out/results/casoffinder_{dist}_time.txt",
+                dist=config["dist"])
+        ]
+
+
+rule dag:
+    output:
+        "dag.pdf"
+    shell:
+        "snakemake --dry-run --cores 1 --dag | dot -Tpdf > dag.pdf"
+        
 
 rule fa_index:
     input:
@@ -33,42 +44,139 @@ rule download_genome:
 ## ARTEMIS.jl
 
 rule clone_and_build_artemis:
-	output:
-		"soft/ARTEMIS.jl/build/bin/ARTEMIS"
-	shell:
-		"""
+    output:
+        "soft/ARTEMIS.jl/build/bin/ARTEMIS"
+    shell:
+        """
         rm -rf soft/ARTEMIS.jl
-		git clone https://github.com/JokingHero/ARTEMIS.jl soft/ARTEMIS.jl
-		cd soft/ARTEMIS.jl
+        git clone https://github.com/JokingHero/ARTEMIS.jl soft/ARTEMIS.jl
+        cd soft/ARTEMIS.jl
         ./build_standalone.sh
         """
 
 
+# this should only run for the largest distance once - other distances can then reuse
 rule artemis_build_trio:
-	input:
-		soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
-		idx="data/hg38v34.fa.fai",
-		genome="data/hg38v34.fa"
-	output:
-		db="out_dir/artemis_out/db/{db_kind}_{prefix}_{dist}/{db_kind}.bin"
-	shell:
-		"soft/ARTEMIS.jl/build/bin/ARTEMIS build "
-        "--name {wildcards.db_kind}_{wildcards.prefix}_{wildcards.dist}_Cas9_hg38v34 "
+    input:
+        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
+        idx="data/hg38v34.fa.fai",
+        genome="data/hg38v34.fa"
+    output:
+        db="out_dir/artemis_out/db/{db_kind}_{prefix}_{max_dist}/{db_kind}.bin"
+    shell:
+        "soft/ARTEMIS.jl/build/bin/ARTEMIS build "
+        "--name {wildcards.db_kind}_{wildcards.prefix}_{wildcards.max_dist}_Cas9_hg38v34 "
         "--genome {input.genome} "
-        "-o out_dir/artemis_out/db/{wildcards.db_kind}_{wildcards.prefix}_{wildcards.dist}/ "
-        "--distance {wildcards.dist} "
+        "-o out_dir/artemis_out/db/{wildcards.db_kind}_{wildcards.prefix}/ "
+        "--distance {wildcards.max_dist} "
         "--motif Cas9 {wildcards.db_kind} --prefix_length {wildcards.prefix}"
 
 
 rule artemis_run_trio:
-	input:
-	    soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
-		db=rules.artemis_build_trio.output.db,
-		guides="data/curated_guides_wo_PAM.txt"
-	output:
-		res="out_dir/artemis_out/results/{db_kind}_{prefix}_{dist}.csv",
-		time="out_dir/artemis_out/results/{db_kind}_{prefix}_{dist}_time.csv"
-	shell:
-		"{{ time {input.soft} "
-		"search out_dir/artemis_out/db/{wildcards.db_kind}_{wildcards.prefix}_{wildcards.dist}/ '{wildcards.db_kind}' {input.guides} {output.res} "
-		"--distance {wildcards.dist}; }} 2> {output.time}"
+    input:
+        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
+        db="out_dir/artemis_out/db/{db_kind}_{prefix}_{config[max_dist]}/{db_kind}.bin",
+        guides="data/curated_guides_wo_PAM.txt"
+    output:
+        res="out_dir/artemis_out/results/{db_kind}_{prefix}_{dist}.csv",
+        time="out_dir/artemis_out/results/{db_kind}_{prefix}_{dist}_time.csv"
+    shell:
+        "export JULIA_NUM_THREADS={config[threads]}; "
+        "{{ time {input.soft} "
+        "search "
+        "--database out_dir/artemis_out/db/{wildcards.db_kind}_{wildcards.prefix}_{wildcards.dist}/ "
+        "--guides {input.guides} "
+        "--output {output.res} "
+        "--distance {wildcards.dist} "
+        "{wildcards.db_kind}; }} 2> {output.time}"
+
+
+## CRISPRITz
+# installed through conda environment
+
+rule create_pam_definition:
+    output:
+        "data/20bp-NGG-SpCas9_{dist}.txt"
+    shell:
+        "echo NNNNNNNNNNNNNNNNNNNNNGG {wildcards.dist} >> {output}"
+
+
+rule split_genome:
+    input:
+        genome="data/hg38v34.fa"
+    output:
+        "data/chrom_split/stdin.part_chr1.fa"
+    shell:
+        """
+        seqkit split -O data/chrom_split -i < {input.genome}
+        rename 's/.fasta$/.fa/' data/chrom_split/*.fasta
+        """
+
+
+# also build once for largest distance
+rule crispritz_index:
+    input:
+        "data/chrom_split/stdin.part_chr1.fa",
+        pam="data/20bp-NGG-SpCas9_{config[max_dist]}.txt"
+    output:
+        "genome_library/NGG_{config[max_dist]}_hg38v34_{config[max_dist]}_ref/NGG_chr1 1_1.bin"
+    shell:
+        "crispritz.py index-genome hg38v34_{config[max_dist]}_ref data/chrom_split/ {input.pam}  -bMax {config[max_dist]} -th {config[threads]}"
+
+
+rule crispritz_search:
+    input:
+        index="genome_library/NGG_{config[max_dist]}_hg38v34_{config[max_dist]}_ref/NGG_chr1 1_1.bin",
+        pam="data/20bp-NGG-SpCas9_{dist}.txt",
+        guides="data/curated_guides_wo_PAM.txt"
+    output:
+        "out_dir/crispritz_out/results/crispritz_{dist}.targets.txt",
+        time="out_dir/crispritz_out/results/crispritz_{dist}_time.csv"
+    shell:
+        "{{ time crispritz.py search genome_library/NGG_{wildcards.dist}_hg38v34_{wildcards.dist}_ref/ {input.pam} {input.guides} "
+        "out_dir/crispritz_out/results/crispritz_{wildcards.dist} "
+        "-index hg38v34_{wildcards.dist}_ref -mm {wildcards.dist} -bMax {wildcards.dist} "
+        "-bDNA {wildcards.dist} -bRNA {wildcards.dist} -th {config[threads]} -r; }} 2> {output.time}"
+
+
+# Cas-OFFinder
+# we don't install through conda as there exists newer version on github 
+# its unstable, but native bulges support should give it a chance in speed competition
+# install 
+
+rule download_casoff:
+    output:
+        "soft/build/cas-offinder"
+    shell:
+        """
+        wget https://github.com/snugel/cas-offinder/releases/download/3.0.0b3/cas-offinder_linux_x86_64.zip -O soft/cas-offinder_linux_x86-64.zip
+        unzip -q soft/cas-offinder_linux_x86-64 -d ./soft
+        rm soft/cas-offinder_linux_x86-64.zip
+        sudo chmod 764 {output}
+        """
+
+
+rule input_prep_casoff:
+    input:
+        "data/curated_guides_wo_PAM.txt"
+    output:
+        dist="data/cas_guides_input_dist{dist}.txt"
+    shell:
+        """
+        touch {output.dist}
+        echo data/hg38v34.fa >> {output.dist}
+        cut -d ' ' -f 1 data/20bp-NGG-SpCas9_{wildcards.dist}.txt >> {output.dist}
+        sed -i '$ s/$/ {wildcards.dist} {wildcards.dist}/' {output.dist}
+        cat {input} | while read line; do echo ${{line}}'NNN {wildcards.dist}'; done >> {output.dist}
+        """
+
+
+rule run_casoff:
+    input:
+        soft="soft/build/cas-offinder",
+        guides="data/cas_guides_input_dist{dist}.txt"
+    output:
+        offt="out_dir/cas-offinder_out/results/casoffinder_{dist}.txt",
+        time="out_dir/cas-offinder_out/results/casoffinder_{dist}_time.txt"
+    shell:
+        "{{ time ./soft/build/cas-offinder {input.guides} G {output.offt}; }} 2> {output.time}"
