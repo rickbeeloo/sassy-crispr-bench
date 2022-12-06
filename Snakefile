@@ -62,20 +62,20 @@ rule artemis_build_trio:
         idx="data/hg38v34.fa.fai",
         genome="data/hg38v34.fa"
     output:
-        db="out_dir/artemis_out/db/{db_kind}_{prefix}_{max_dist}/{db_kind}.bin"
+        db=str("out_dir/artemis_out/db/{db_kind}_{prefix}_" f"{config['max_dist']}" "/{db_kind}.bin")
     shell:
         "soft/ARTEMIS.jl/build/bin/ARTEMIS build "
-        "--name {wildcards.db_kind}_{wildcards.prefix}_{wildcards.max_dist}_Cas9_hg38v34 "
+        "--name {wildcards.db_kind}_{wildcards.prefix}_{config[max_dist]}_Cas9_hg38v34 "
         "--genome {input.genome} "
-        "-o out_dir/artemis_out/db/{wildcards.db_kind}_{wildcards.prefix}/ "
-        "--distance {wildcards.max_dist} "
+        "-o out_dir/artemis_out/db/{wildcards.db_kind}_{wildcards.prefix}_{config[max_dist]}/ "
+        "--distance {config[max_dist]} "
         "--motif Cas9 {wildcards.db_kind} --prefix_length {wildcards.prefix}"
 
 
 rule artemis_run_trio:
     input:
         soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
-        db="out_dir/artemis_out/db/{db_kind}_{prefix}_{config[max_dist]}/{db_kind}.bin",
+        db=str("out_dir/artemis_out/db/{db_kind}_{prefix}_" f"{config['max_dist']}" "/{db_kind}.bin"),
         guides="data/curated_guides_wo_PAM.txt"
     output:
         res="out_dir/artemis_out/results/{db_kind}_{prefix}_{dist}.csv",
@@ -117,16 +117,16 @@ rule split_genome:
 rule crispritz_index:
     input:
         "data/chrom_split/stdin.part_chr1.fa",
-        pam="data/20bp-NGG-SpCas9_{config[max_dist]}.txt"
+        pam=expand("data/20bp-NGG-SpCas9_{max_dist}.txt", max_dist=config["max_dist"])
     output:
-        "genome_library/NGG_{config[max_dist]}_hg38v34_{config[max_dist]}_ref/NGG_chr1 1_1.bin"
+        "genome_library/NGG_{config.max_dist}_hg38v34_{config.max_dist}_ref/NGG_chr1 1_1.bin"
     shell:
         "crispritz.py index-genome hg38v34_{config[max_dist]}_ref data/chrom_split/ {input.pam}  -bMax {config[max_dist]} -th {config[threads]}"
 
 
 rule crispritz_search:
     input:
-        index="genome_library/NGG_{config[max_dist]}_hg38v34_{config[max_dist]}_ref/NGG_chr1 1_1.bin",
+        index=expand("genome_library/NGG_{max_dist}_hg38v34_{max_dist}_ref/NGG_chr1 1_1.bin", max_dist=config["max_dist"]),
         pam="data/20bp-NGG-SpCas9_{dist}.txt",
         guides="data/curated_guides_wo_PAM.txt"
     output:
