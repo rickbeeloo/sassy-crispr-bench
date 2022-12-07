@@ -84,7 +84,7 @@ rule artemis_run_trio:
         "export JULIA_NUM_THREADS={config[threads]}; "
         "{{ time {input.soft} "
         "search "
-        "--database out_dir/artemis_out/db/{wildcards.db_kind}_{wildcards.prefix}_{wildcards.dist}/ "
+        "--database out_dir/artemis_out/db/{wildcards.db_kind}_{wildcards.prefix}_{config[max_dist]}/ "
         "--guides {input.guides} "
         "--output {output.res} "
         "--distance {wildcards.dist} "
