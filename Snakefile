@@ -93,14 +93,6 @@ rule artemis_run_trio:
 
 ## CRISPRITz
 # installed through conda environment
-
-rule create_pam_definition:
-    output:
-        "data/20bp-NGG-SpCas9_{dist}.txt"
-    shell:
-        "echo NNNNNNNNNNNNNNNNNNNNNGG {wildcards.dist} >> {output}"
-
-
 rule split_genome:
     input:
         genome="data/hg38v34.fa"
@@ -117,7 +109,7 @@ rule split_genome:
 rule crispritz_index:
     input:
         "data/chrom_split/stdin.part_chr1.fa",
-        pam=expand("data/20bp-NGG-SpCas9_{max_dist}.txt", max_dist=config["max_dist"])
+        pam="data/20bp-NGG-SpCas9.txt"
     output:
         "genome_library/NGG_{config.max_dist}_hg38v34_{config.max_dist}_ref/NGG_chr1 1_1.bin"
     shell:
@@ -127,15 +119,15 @@ rule crispritz_index:
 rule crispritz_search:
     input:
         index=expand("genome_library/NGG_{max_dist}_hg38v34_{max_dist}_ref/NGG_chr1 1_1.bin", max_dist=config["max_dist"]),
-        pam="data/20bp-NGG-SpCas9_{dist}.txt",
+        pam="data/20bp-NGG-SpCas9.txt",
         guides="data/curated_guides_wo_PAM.txt"
     output:
-        "out_dir/crispritz_out/results/crispritz_{dist}.targets.txt",
+        data="out_dir/crispritz_out/results/crispritz_{dist}.targets.txt",
         time="out_dir/crispritz_out/results/crispritz_{dist}_time.csv"
     shell:
-        "{{ time crispritz.py search genome_library/NGG_{wildcards.dist}_hg38v34_{wildcards.dist}_ref/ {input.pam} {input.guides} "
+        "{{ time crispritz.py search genome_library/NGG_{config[max_dist]}_hg38v34_{config[max_dist]}_ref/ {input.pam} {input.guides} "
         "out_dir/crispritz_out/results/crispritz_{wildcards.dist} "
-        "-index hg38v34_{wildcards.dist}_ref -mm {wildcards.dist} -bMax {wildcards.dist} "
+        "-index hg38v34_{config[max_dist]}_ref -mm {wildcards.dist} -bMax {wildcards.dist} "
         "-bDNA {wildcards.dist} -bRNA {wildcards.dist} -th {config[threads]} -r; }} 2> {output.time}"
 
 
@@ -165,8 +157,7 @@ rule input_prep_casoff:
         """
         touch {output.dist}
         echo data/hg38v34.fa >> {output.dist}
-        cut -d ' ' -f 1 data/20bp-NGG-SpCas9_{wildcards.dist}.txt >> {output.dist}
-        sed -i '$ s/$/ {wildcards.dist} {wildcards.dist}/' {output.dist}
+        echo NNNNNNNNNNNNNNNNNNNNNGG {wildcards.dist} {wildcards.dist} >> {output.dist}
         cat {input} | while read line; do echo ${{line}}'NNN {wildcards.dist}'; done >> {output.dist}
         """
 
