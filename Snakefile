@@ -19,7 +19,7 @@ rule dag:
         "dag.pdf"
     shell:
         "snakemake --dry-run --cores 1 --dag | dot -Tpdf > dag.pdf"
-        
+
 
 rule fa_index:
     input:
@@ -82,13 +82,14 @@ rule artemis_run_trio:
         time="out_dir/artemis_out/results/{db_kind}_{prefix}_{dist}_time.csv"
     shell:
         "export JULIA_NUM_THREADS={config[threads]}; "
-        "{{ time {input.soft} "
+        "{{ /usr/bin/time  -f 'artemis {wildcards.db_kind} {wildcards.dist} %e %U %S' {input.soft} "
         "search "
         "--database out_dir/artemis_out/db/{wildcards.db_kind}_{wildcards.prefix}_{config[max_dist]}/ "
         "--guides {input.guides} "
         "--output {output.res} "
         "--distance {wildcards.dist} "
-        "{wildcards.db_kind}; }} 2> {output.time}"
+        "{wildcards.db_kind}; }} 2> {output.time};"
+        "tail -1 {output.time} >> summary.txt;"
 
 
 ## CRISPRITz
@@ -125,10 +126,13 @@ rule crispritz_search:
         data="out_dir/crispritz_out/results/crispritz_{dist}.targets.txt",
         time="out_dir/crispritz_out/results/crispritz_{dist}_time.csv"
     shell:
-        "{{ time crispritz.py search genome_library/NGG_{config[max_dist]}_hg38v34_{config[max_dist]}_ref/ {input.pam} {input.guides} "
+        "{{ /usr/bin/time -f 'CRISPRitz search {wildcards.dist} %e %U %S' crispritz.py "
+        "search "
+        "genome_library/NGG_{config[max_dist]}_hg38v34_{config[max_dist]}_ref/ {input.pam} {input.guides} "
         "out_dir/crispritz_out/results/crispritz_{wildcards.dist} "
         "-index hg38v34_{config[max_dist]}_ref -mm {wildcards.dist} -bMax {wildcards.dist} "
-        "-bDNA {wildcards.dist} -bRNA {wildcards.dist} -th {config[threads]} -r; }} 2> {output.time}"
+        "-bDNA {wildcards.dist} -bRNA {wildcards.dist} -th {config[threads]} -r; }} 2> {output.time};"
+        "tail -1 {output.time} >> summary.txt;"
 
 
 # Cas-OFFinder
@@ -170,4 +174,6 @@ rule run_casoff:
         offt="out_dir/cas-offinder_out/results/casoffinder_{dist}.txt",
         time="out_dir/cas-offinder_out/results/casoffinder_{dist}_time.txt"
     shell:
-        "{{ time ./soft/build/cas-offinder {input.guides} G {output.offt}; }} 2> {output.time}"
+        "{{ /usr/bin/time -f 'cas-offinder GPU {wildcards.dist} %e %U %S' ./soft/build/cas-offinder "
+        "{input.guides} G {output.offt}; }} 2> {output.time};"
+        "tail -1 {output.time} >> summary.txt;"
