@@ -6,8 +6,10 @@ Currently this pipeline builds and searches for off-target sites within the whol
 * ARTEMIS.jl
 * CRISPRITZ
 * Cas-offinder
-* FlashFry
-* Calitas
+
+# Results
+
+Results of this pipeline are available for inspection in the `summary.txt` file. There is no need to rerun all the benchmark.
 
 # Installation 
 
@@ -36,12 +38,8 @@ To run specific rules consult the rule you wish to execute and copy one of it's 
 
 # Requirements
 
-The data/ folder should contain three files before running the pipeline. Please make sure to download hg38v34.fa and place it here. We provide files curated_guides_wo_PAM.txt (list of guides to find off-targets for) and 20bp-NGG-SpCas9.txt (a template for guide format required by CRISPRITZ), while the rest of remaining required input files are generated. 
-
-Due to the time it takes to execute several of the steps of the pipeline, by default it only runs search for distance = 1. This is indicated in the config.yaml file. However, if you wish to run the pipeline for a different, or several, distance(s) simply modify the config file accordingly. Include several distances by standard python array notation. Due to the particularities of the software, running the pipeline without cas-offinder is also default behavior as indicated by the variable "cas" in config.yaml. Simply change this to True if you know that cas-offinder is compatible to your platform. 
-
-Please note that particularly the indexing step is a time-costly process and so running the pipeline from end-to-end will take some time. Furthermore, output files for indexing and searching for greater distances grow to a considerable size, so please make sure to run the pipelines in a directory with ample free storage space. 
-
+`config.yaml` contains default settings for the pipeline to run over. This pipeline should download all the files and work as is with simple `snakemake --cores 1`. It might take a loong time to perform all calculations, be aware. You need large disc space 
+of at least 60GB to perform all calculations.
 
 # Possible issues
 
