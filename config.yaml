@@ -1,5 +1,6 @@
 dist: [0, 1, 2, 3]
 max_dist: 3
+early_stopping: [[1000000, 1000000, 1000000, 1000000], [1, 3, 50, 200]]
 prefix: 8
 threads: 15
 artemis: ["linearDB", "treeDB", "motifDB"]
