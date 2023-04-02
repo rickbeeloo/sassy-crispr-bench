@@ -5,14 +5,15 @@ configfile: "config.yaml"
 rule all:
     input:
         [
-            expand("out_dir/artemis_out/results/linearDBes_{es}_{prefix}_{dist}_time.csv", 
-                es=config["early_stopping"], prefix=config["prefix"], dist=config["dist"]),
-            #expand("out_dir/artemis_out/results/{db_kind}_{prefix}_{dist}_time.csv", 
-            #    db_kind=config["artemis"], prefix=config["prefix"], dist=config["dist"]),
-            #expand("out_dir/crispritz_out/results/crispritz_{dist}_time.csv", 
-            #    dist=config["dist"]),
-            #expand("out_dir/cas-offinder_out/results/casoffinder_{dist}_time.txt",
-            #    dist=config["dist"])
+            expand("out_dir/artemis_out/results/{db_kind}_{prefix}_{dist}_time.csv", 
+                db_kind=config["artemis"], prefix=config["prefix"], dist=config["dist"]),
+            "out_dir/artemis_out/results/esMax_8_3_time.csv", 
+            "out_dir/artemis_out/results/esMin_8_3_time.csv", 
+            "out_dir/artemis_out/results/es1_8_3_time.csv",
+            expand("out_dir/crispritz_out/results/crispritz_{dist}_time.csv", 
+                dist=config["dist"]),
+            expand("out_dir/cas-offinder_out/results/casoffinder_{dist}_time.txt",
+                dist=config["dist"])
         ]
 
 
@@ -94,24 +95,68 @@ rule artemis_run_trio:
         "tail -1 {output.time} >> summary.txt;"
 
 
-rule artemis_run_linearDBes:
+rule early_stopping_max:
     input:
         soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
-        db=str("out_dir/artemis_out/db/linearDB_{prefix}_" f"{config['max_dist']}" "/{db_kind}.bin"),
+        db=str("out_dir/artemis_out/db/linearDB_8_3/linearDB.bin"),
         guides="data/curated_guides_wo_PAM.txt"
     output:
-        res="out_dir/artemis_out/results/linearDBes_{es}_{prefix}_{dist}.csv",
-        time="out_dir/artemis_out/results/linearDBes_{es}_{prefix}_{dist}_time.csv"
+        res="out_dir/artemis_out/results/esMax_8_3.csv",
+        time="out_dir/artemis_out/results/esMax_8_3_time.csv"
     shell:
         "export JULIA_NUM_THREADS={config[threads]}; "
-        "{{ /usr/bin/time  -f 'artemis lineaDBes_{wildcards.es} {wildcards.dist} %e %U %S' {input.soft} "
+        "{{ /usr/bin/time  -f 'artemis esMax 3 %e %U %S' {input.soft} "
         "search "
-        "--database out_dir/artemis_out/db/linearDBes_{wildcards.es}_{wildcards.prefix}_{config[max_dist]}/ "
+        "--database out_dir/artemis_out/db/linearDB_8_3/ "
         "--guides {input.guides} "
         "--output {output.res} "
-        "--distance {wildcards.dist} "
-        "linearDB"
-        "--early_stopping {wildcards.es}; "
+        "--distance 3 "
+        "linearDB "
+        "--early_stopping 1000000 1000000 1000000 1000000; "
+        "}} 2> {output.time};"
+        "tail -1 {output.time} >> summary.txt;"
+ 
+ 
+rule early_stopping_min:
+    input:
+        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
+        db=str("out_dir/artemis_out/db/linearDB_8_3/linearDB.bin"),
+        guides="data/curated_guides_wo_PAM.txt"
+    output:
+        res="out_dir/artemis_out/results/esMin_8_3.csv",
+        time="out_dir/artemis_out/results/esMin_8_3_time.csv"
+    shell:
+        "export JULIA_NUM_THREADS={config[threads]}; "
+        "{{ /usr/bin/time  -f 'artemis esMin 3 %e %U %S' {input.soft} "
+        "search "
+        "--database out_dir/artemis_out/db/linearDB_8_3/ "
+        "--guides {input.guides} "
+        "--output {output.res} "
+        "--distance 3 "
+        "linearDB "
+        "--early_stopping 1 10 50 200; "
+        "}} 2> {output.time};"
+        "tail -1 {output.time} >> summary.txt;"
+
+
+rule early_stopping_1:
+    input:
+        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
+        db=str("out_dir/artemis_out/db/linearDB_8_3/linearDB.bin"),
+        guides="data/curated_guides_wo_PAM.txt"
+    output:
+        res="out_dir/artemis_out/results/es1_8_3.csv",
+        time="out_dir/artemis_out/results/es1_8_3_time.csv"
+    shell:
+        "export JULIA_NUM_THREADS={config[threads]}; "
+        "{{ /usr/bin/time  -f 'artemis es1 3 %e %U %S' {input.soft} "
+        "search "
+        "--database out_dir/artemis_out/db/linearDB_8_3/ "
+        "--guides {input.guides} "
+        "--output {output.res} "
+        "--distance 1 "
+        "linearDB "
+        "--early_stopping 1 1; "
         "}} 2> {output.time};"
         "tail -1 {output.time} >> summary.txt;"
 
