@@ -1,5 +1,5 @@
-dist: [0, 1, 2, 3]
-max_dist: 3
-prefix: 8
+dist: [0, 1, 2, 3, 4]
+max_dist: 4
+prefix: 9
 threads: 15
 artemis: ["linearDB", "treeDB", "motifDB"]

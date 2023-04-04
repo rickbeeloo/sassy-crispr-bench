@@ -20,4 +20,4 @@ artemis treeDB 2 186.27 2462.52 174.67
 CRISPRitz search 0 134.85 116.71 17.90
 artemis esMin 3 1438.20 21131.33 115.04
 artemis esMax 3 1434.54 20942.36 108.89
-artemis es1 3 28.68 370.31 6.06
+artemis es1 1 28.68 370.31 6.06

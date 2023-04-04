@@ -7,11 +7,11 @@ rule all:
         [
             expand("out_dir/artemis_out/results/{db_kind}_{prefix}_{dist}_time.csv", 
                 db_kind=config["artemis"], prefix=config["prefix"], dist=config["dist"]),
-            "out_dir/artemis_out/results/esMax_8_3_time.csv", 
-            "out_dir/artemis_out/results/esMin_8_3_time.csv", 
-            "out_dir/artemis_out/results/es1_8_3_time.csv",
+            "out_dir/artemis_out/results/esMax_9_4_time.csv", 
+            "out_dir/artemis_out/results/esMin_9_4_time.csv", 
+            "out_dir/artemis_out/results/es1_9_1_time.csv", 
             expand("out_dir/crispritz_out/results/crispritz_{dist}_time.csv", 
-                dist=config["dist"]),
+                dist=config["dist"]), 
             expand("out_dir/cas-offinder_out/results/casoffinder_{dist}_time.txt",
                 dist=config["dist"])
         ]
@@ -98,21 +98,21 @@ rule artemis_run_trio:
 rule early_stopping_max:
     input:
         soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
-        db=str("out_dir/artemis_out/db/linearDB_8_3/linearDB.bin"),
+        db=str("out_dir/artemis_out/db/linearDB_9_4/linearDB.bin"),
         guides="data/curated_guides_wo_PAM.txt"
     output:
-        res="out_dir/artemis_out/results/esMax_8_3.csv",
-        time="out_dir/artemis_out/results/esMax_8_3_time.csv"
+        res="out_dir/artemis_out/results/esMax_9_4.csv",
+        time="out_dir/artemis_out/results/esMax_9_4_time.csv"
     shell:
         "export JULIA_NUM_THREADS={config[threads]}; "
-        "{{ /usr/bin/time  -f 'artemis esMax 3 %e %U %S' {input.soft} "
+        "{{ /usr/bin/time  -f 'artemis esMax 4 %e %U %S' {input.soft} "
         "search "
-        "--database out_dir/artemis_out/db/linearDB_8_3/ "
+        "--database out_dir/artemis_out/db/linearDB_9_4/ "
         "--guides {input.guides} "
         "--output {output.res} "
-        "--distance 3 "
+        "--distance 4 "
         "linearDB "
-        "--early_stopping 1000000 1000000 1000000 1000000; "
+        "--early_stopping 1000000 1000000 1000000 1000000 1000000; "
         "}} 2> {output.time};"
         "tail -1 {output.time} >> summary.txt;"
  
@@ -120,21 +120,21 @@ rule early_stopping_max:
 rule early_stopping_min:
     input:
         soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
-        db=str("out_dir/artemis_out/db/linearDB_8_3/linearDB.bin"),
+        db=str("out_dir/artemis_out/db/linearDB_9_4/linearDB.bin"),
         guides="data/curated_guides_wo_PAM.txt"
     output:
-        res="out_dir/artemis_out/results/esMin_8_3.csv",
-        time="out_dir/artemis_out/results/esMin_8_3_time.csv"
+        res="out_dir/artemis_out/results/esMin_9_4.csv",
+        time="out_dir/artemis_out/results/esMin_9_4_time.csv"
     shell:
         "export JULIA_NUM_THREADS={config[threads]}; "
-        "{{ /usr/bin/time  -f 'artemis esMin 3 %e %U %S' {input.soft} "
+        "{{ /usr/bin/time  -f 'artemis esMin 4 %e %U %S' {input.soft} "
         "search "
-        "--database out_dir/artemis_out/db/linearDB_8_3/ "
+        "--database out_dir/artemis_out/db/linearDB_9_4/ "
         "--guides {input.guides} "
         "--output {output.res} "
-        "--distance 3 "
+        "--distance 4 "
         "linearDB "
-        "--early_stopping 1 10 50 200; "
+        "--early_stopping 1 10 50 200 500; "
         "}} 2> {output.time};"
         "tail -1 {output.time} >> summary.txt;"
 
@@ -142,14 +142,14 @@ rule early_stopping_min:
 rule early_stopping_1:
     input:
         soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
-        db=str("out_dir/artemis_out/db/linearDB_8_3/linearDB.bin"),
+        db=str("out_dir/artemis_out/db/linearDB_9_4/linearDB.bin"),
         guides="data/curated_guides_wo_PAM.txt"
     output:
-        res="out_dir/artemis_out/results/es1_8_3.csv",
-        time="out_dir/artemis_out/results/es1_8_3_time.csv"
+        res="out_dir/artemis_out/results/es1_9_4.csv",
+        time="out_dir/artemis_out/results/es1_9_4_time.csv"
     shell:
         "export JULIA_NUM_THREADS={config[threads]}; "
-        "{{ /usr/bin/time  -f 'artemis es1 3 %e %U %S' {input.soft} "
+        "{{ /usr/bin/time  -f 'artemis es1 1 %e %U %S' {input.soft} "
         "search "
         "--database out_dir/artemis_out/db/linearDB_8_3/ "
         "--guides {input.guides} "
