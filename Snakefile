@@ -134,7 +134,7 @@ rule early_stopping_min:
         "--output {output.res} "
         "--distance 4 "
         "linearDB "
-        "--early_stopping 1 10 50 200 500; "
+        "--early_stopping 1 1 10 50 200; "
         "}} 2> {output.time};"
         "tail -1 {output.time} >> summary.txt;"
 
