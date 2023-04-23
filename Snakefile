@@ -7,13 +7,13 @@ rule all:
         [
             expand("out_dir/artemis_out/results/{db_kind}_{prefix}_{dist}_time.csv", 
                 db_kind=config["artemis"], prefix=config["prefix"], dist=config["dist"]),
-            "out_dir/artemis_out/results/esMax_9_4_time.csv", 
-            "out_dir/artemis_out/results/esMin_9_4_time.csv", 
-            "out_dir/artemis_out/results/es1_9_1_time.csv", 
             expand("out_dir/crispritz_out/results/crispritz_{dist}_time.csv", 
                 dist=config["dist"]), 
             expand("out_dir/cas-offinder_out/results/casoffinder_{dist}_time.txt",
-                dist=config["dist"])
+                dist=config["dist"]),
+            #"out_dir/artemis_out/results/esMax_9_4_time.csv", 
+            #"out_dir/artemis_out/results/esMin_9_4_time.csv", 
+            #"out_dir/artemis_out/results/es1_9_1_time.csv", 
         ]
 
 
@@ -181,7 +181,7 @@ rule crispritz_index:
         "data/chrom_split/stdin.part_chr1.fa",
         pam="data/20bp-NGG-SpCas9.txt"
     output:
-        "genome_library/NGG_{config.max_dist}_hg38v34_{config.max_dist}_ref/NGG_chr1 1_1.bin"
+        "genome_library/NGG_{max_dist}_hg38v34_{max_dist}_ref/NGG_chr1 1_1.bin"
     shell:
         "crispritz.py index-genome hg38v34_{config[max_dist]}_ref data/chrom_split/ {input.pam}  -bMax {config[max_dist]} -th {config[threads]}"
 
