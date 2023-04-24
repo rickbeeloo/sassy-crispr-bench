@@ -11,7 +11,7 @@ Currently this pipeline builds and searches for off-target sites within the whol
 
 Results of this pipeline are available for inspection in the `summary.txt` file. There is no need to rerun all the benchmark.
 
-# Installation 
+# Installation (tested on ubuntu 22.04)
 
 Make sure to install mamba form mambaforge:
 
