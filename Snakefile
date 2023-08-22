@@ -105,7 +105,7 @@ rule early_stopping_max:
         res="out_dir/artemis_out/results/esMax_9_4.csv",
         time="out_dir/artemis_out/results/esMax_9_4_time.csv"
     shell:
-        "export JULIA_NUM_THREADS={config[threads]}; "
+        "export JULIA_NUM_THREADS={config[threads_run]}; "
         "{{ /usr/bin/time  -f 'artemis esMax 4 %e %U %S' {input.soft} "
         "search "
         "--database out_dir/artemis_out/db/linearDB_9_4/ "
@@ -127,7 +127,7 @@ rule early_stopping_min:
         res="out_dir/artemis_out/results/esMin_9_4.csv",
         time="out_dir/artemis_out/results/esMin_9_4_time.csv"
     shell:
-        "export JULIA_NUM_THREADS={config[threads]}; "
+        "export JULIA_NUM_THREADS={config[threads_run]}; "
         "{{ /usr/bin/time  -f 'artemis esMin 4 %e %U %S' {input.soft} "
         "search "
         "--database out_dir/artemis_out/db/linearDB_9_4/ "
@@ -149,7 +149,7 @@ rule early_stopping_1:
         res="out_dir/artemis_out/results/es1_9_4.csv",
         time="out_dir/artemis_out/results/es1_9_4_time.csv"
     shell:
-        "export JULIA_NUM_THREADS={config[threads]}; "
+        "export JULIA_NUM_THREADS={config[threads_run]}; "
         "{{ /usr/bin/time  -f 'artemis es1 1 %e %U %S' {input.soft} "
         "search "
         "--database out_dir/artemis_out/db/linearDB_8_3/ "
@@ -184,7 +184,7 @@ rule crispritz_index:
     output:
         "genome_library/NGG_{max_dist}_hg38v34_{max_dist}_ref/NGG_chr1 1_1.bin"
     shell:
-        "crispritz.py index-genome hg38v34_{config[max_dist]}_ref data/chrom_split/ {input.pam}  -bMax {config[max_dist]} -th {config[threads]}"
+        "crispritz.py index-genome hg38v34_{config[max_dist]}_ref data/chrom_split/ {input.pam}  -bMax {config[max_dist]} -th {config[threads_run]}"
 
 
 rule crispritz_search:
@@ -201,7 +201,7 @@ rule crispritz_search:
         "genome_library/NGG_{config[max_dist]}_hg38v34_{config[max_dist]}_ref/ {input.pam} {input.guides} "
         "out_dir/crispritz_out/results/crispritz_{wildcards.dist} "
         "-index hg38v34_{config[max_dist]}_ref -mm {wildcards.dist} -bMax {wildcards.dist} "
-        "-bDNA {wildcards.dist} -bRNA {wildcards.dist} -th {config[threads]} -r; }} 2> {output.time};"
+        "-bDNA {wildcards.dist} -bRNA {wildcards.dist} -th {config[threads_build]} -r; }} 2> {output.time};"
         "tail -1 {output.time} >> summary.txt;"
 
 
