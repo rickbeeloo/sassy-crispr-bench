@@ -2,6 +2,7 @@ import sys
 
 configfile: "config.yaml"
 
+
 rule all:
     input:
         [
@@ -85,7 +86,7 @@ rule artemis_run_trio:
         res="out_dir/artemis_out/results/{db_kind}_{prefix}_{dist}.csv",
         time="out_dir/artemis_out/results/{db_kind}_{prefix}_{dist}_time.csv"
     shell:
-        "export JULIA_NUM_THREADS={config[threads_run]}; "
+        "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p '$(dirname {output.time})' && touch {output.time}; "
         "{{ /usr/bin/time  -f 'artemis {wildcards.db_kind} {wildcards.dist} %e %U %S' {input.soft} "
         "search "
         "--database out_dir/artemis_out/db/{wildcards.db_kind}_{wildcards.prefix}_{config[max_dist]}/ "
@@ -105,7 +106,7 @@ rule early_stopping_max:
         res="out_dir/artemis_out/results/esMax_9_4.csv",
         time="out_dir/artemis_out/results/esMax_9_4_time.csv"
     shell:
-        "export JULIA_NUM_THREADS={config[threads_run]}; "
+        "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p '$(dirname {output.time})' && touch {output.time}; "
         "{{ /usr/bin/time  -f 'artemis esMax 4 %e %U %S' {input.soft} "
         "search "
         "--database out_dir/artemis_out/db/linearDB_9_4/ "
@@ -127,7 +128,7 @@ rule early_stopping_min:
         res="out_dir/artemis_out/results/esMin_9_4.csv",
         time="out_dir/artemis_out/results/esMin_9_4_time.csv"
     shell:
-        "export JULIA_NUM_THREADS={config[threads_run]}; "
+        "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p '$(dirname {output.time})' && touch {output.time}; "
         "{{ /usr/bin/time  -f 'artemis esMin 4 %e %U %S' {input.soft} "
         "search "
         "--database out_dir/artemis_out/db/linearDB_9_4/ "
@@ -149,7 +150,7 @@ rule early_stopping_1:
         res="out_dir/artemis_out/results/es1_9_4.csv",
         time="out_dir/artemis_out/results/es1_9_4_time.csv"
     shell:
-        "export JULIA_NUM_THREADS={config[threads_run]}; "
+        "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p '$(dirname {output.time})' && touch {output.time}; "
         "{{ /usr/bin/time  -f 'artemis es1 1 %e %U %S' {input.soft} "
         "search "
         "--database out_dir/artemis_out/db/linearDB_8_3/ "
@@ -196,6 +197,7 @@ rule crispritz_search:
         data="out_dir/crispritz_out/results/crispritz_{dist}.targets.txt",
         time="out_dir/crispritz_out/results/crispritz_{dist}_time.csv"
     shell:
+        "mkdir -p '$(dirname {output.time})' && touch {output.time}; "
         "{{ /usr/bin/time -f 'CRISPRitz search {wildcards.dist} %e %U %S' crispritz.py "
         "search "
         "genome_library/NGG_{config[max_dist]}_hg38v34_{config[max_dist]}_ref/ {input.pam} {input.guides} "
@@ -244,6 +246,7 @@ rule run_casoff:
         offt="out_dir/cas-offinder_out/results/casoffinder_{dist}.txt",
         time="out_dir/cas-offinder_out/results/casoffinder_{dist}_time.txt"
     shell:
+        "mkdir -p '$(dirname {output.time})' && touch {output.time}; "
         "{{ /usr/bin/time -f 'cas-offinder GPU {wildcards.dist} %e %U %S' ./soft/build/cas-offinder "
         "{input.guides} G {output.offt}; }} 2> {output.time};"
         "tail -1 {output.time} >> summary.txt;"
