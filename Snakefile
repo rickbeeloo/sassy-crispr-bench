@@ -67,6 +67,7 @@ rule artemis_build_trio:
     output:
         db=str("out_dir/artemis_out/db/{db_kind}_{prefix}_" f"{config['max_dist']}" "/{db_kind}.bin")
     shell:
+        "export JULIA_NUM_THREADS={config[threads_build]}; "
         "soft/ARTEMIS.jl/build/bin/ARTEMIS build "
         "--name {wildcards.db_kind}_{wildcards.prefix}_{config[max_dist]}_Cas9_hg38v34 "
         "--genome {input.genome} "
@@ -84,7 +85,7 @@ rule artemis_run_trio:
         res="out_dir/artemis_out/results/{db_kind}_{prefix}_{dist}.csv",
         time="out_dir/artemis_out/results/{db_kind}_{prefix}_{dist}_time.csv"
     shell:
-        "export JULIA_NUM_THREADS={config[threads]}; "
+        "export JULIA_NUM_THREADS={config[threads_run]}; "
         "{{ /usr/bin/time  -f 'artemis {wildcards.db_kind} {wildcards.dist} %e %U %S' {input.soft} "
         "search "
         "--database out_dir/artemis_out/db/{wildcards.db_kind}_{wildcards.prefix}_{config[max_dist]}/ "
