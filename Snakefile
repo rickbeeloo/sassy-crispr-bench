@@ -203,7 +203,7 @@ rule crispritz_search:
         "genome_library/NGG_{config[max_dist]}_hg38v34_{config[max_dist]}_ref/ {input.pam} {input.guides} "
         "out_dir/crispritz_out/results/crispritz_{wildcards.dist} "
         "-index hg38v34_{config[max_dist]}_ref -mm {wildcards.dist} -bMax {wildcards.dist} "
-        "-bDNA {wildcards.dist} -bRNA {wildcards.dist} -th {config[threads_build]} -r; }} 2> {output.time};"
+        "-bDNA {wildcards.dist} -bRNA {wildcards.dist} -th {config[threads_run]} -r; }} 2> {output.time};"
         "tail -1 {output.time} >> summary.txt;"
 
 
