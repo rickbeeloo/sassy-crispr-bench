@@ -12,9 +12,9 @@ rule all:
                 dist=config["dist"]), 
             expand("out_dir/cas-offinder_out/results/casoffinder_{dist}_time.txt",
                 dist=config["dist"]),
-            #"out_dir/artemis_out/results/esMax_9_4_time.csv", 
-            #"out_dir/artemis_out/results/esMin_9_4_time.csv", 
-            #"out_dir/artemis_out/results/es1_9_1_time.csv", 
+            "out_dir/artemis_out/results/esMax_9_4_time.csv", 
+            "out_dir/artemis_out/results/esMin_9_4_time.csv", 
+            "out_dir/artemis_out/results/esOne_9_4_time.csv"
         ]
 
 
@@ -141,19 +141,19 @@ rule early_stopping_min:
         "tail -1 {output.time} >> summary.txt;"
 
 
-rule early_stopping_1:
+rule early_stopping_one:
     input:
         soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
         db=str("out_dir/artemis_out/db/linearDB_9_4/linearDB.bin"),
         guides="data/curated_guides_wo_PAM.txt"
     output:
-        res="out_dir/artemis_out/results/es1_9_4.csv",
-        time="out_dir/artemis_out/results/es1_9_4_time.csv"
+        res="out_dir/artemis_out/results/esOne_9_4.csv",
+        time="out_dir/artemis_out/results/esOne_9_4_time.csv"
     shell:
         "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
-        "{{ /usr/bin/time  -f 'artemis es1 1 %e %U %S' {input.soft} "
+        "{{ /usr/bin/time  -f 'artemis esOne 1 %e %U %S' {input.soft} "
         "search "
-        "--database out_dir/artemis_out/db/linearDB_8_3/ "
+        "--database out_dir/artemis_out/db/linearDB_9_4/ "
         "--guides {input.guides} "
         "--output {output.res} "
         "--distance 1 "
@@ -161,7 +161,6 @@ rule early_stopping_1:
         "--early_stopping 1 1; "
         "}} 2> {output.time};"
         "tail -1 {output.time} >> summary.txt;"
-
 
 ## CRISPRITz
 # installed through conda environment
