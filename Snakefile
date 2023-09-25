@@ -172,11 +172,12 @@ rule artemis_build_dictDB:
     output:
         db="out_dir/artemis_out/db/dictDB/dictDB.bin"
     shell:
-        "export JULIA_NUM_THREADS={config[threads_build]}; "
+        "export JULIA_NUM_THREADS={config[threads_build]}; mkdir -p $(dirname {output.db}); "
         "soft/ARTEMIS.jl/build/bin/ARTEMIS build "
         "--name dictDB_default_Cas9_hg38v34 "
         "--genome {input.genome} "
-        "-o out_dir/artemis_out/db/dictDB/ "
+        "--output {output.db} "
+        "--distance 1 "
         "--motif Cas9 dictDB"
 
 
