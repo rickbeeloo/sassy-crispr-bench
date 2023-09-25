@@ -14,7 +14,8 @@ rule all:
                 dist=config["dist"]),
             "out_dir/artemis_out/results/esMax_9_4_time.csv", 
             "out_dir/artemis_out/results/esMin_9_4_time.csv", 
-            "out_dir/artemis_out/results/esOne_9_4_time.csv"
+            "out_dir/artemis_out/results/esOne_9_4_time.csv",
+            "out_dir/artemis_out/db/dictDB/dictDB.bin"
         ]
 
 
@@ -161,6 +162,23 @@ rule early_stopping_one:
         "--early_stopping 1 1; "
         "}} 2> {output.time};"
         "tail -1 {output.time} >> summary.txt;"
+
+
+rule artemis_build_dictDB:
+    input:
+        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
+        idx="data/hg38v34.fa.fai",
+        genome="data/hg38v34.fa"
+    output:
+        db="out_dir/artemis_out/db/dictDB/dictDB.bin"
+    shell:
+        "export JULIA_NUM_THREADS={config[threads_build]}; "
+        "soft/ARTEMIS.jl/build/bin/ARTEMIS build "
+        "--name dictDB_default_Cas9_hg38v34 "
+        "--genome {input.genome} "
+        "-o out_dir/artemis_out/db/dictDB/ "
+        "--motif Cas9 dictDB"
+
 
 ## CRISPRITz
 # installed through conda environment
