@@ -15,8 +15,9 @@ rule all:
             "out_dir/artemis_out/results/esMax_9_4_time.csv", 
             "out_dir/artemis_out/results/esMin_9_4_time.csv", 
             "out_dir/artemis_out/results/esOne_9_4_time.csv",
-            "out_dir/artemis_out/results/dictDB_time.csv", 
-            "out_dir/artemis_out/results/hashDB_time.csv"
+            "out_dir/artemis_out/results/dictDB_time.csv",
+            "out_dir/artemis_out/results/hashDB_right_time.csv",
+            "out_dir/artemis_out/results/hashDB_left_time.csv"
         ]
 
 
@@ -210,15 +211,51 @@ rule artemis_run_dictDB:
     shell:
         "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
         "{{ /usr/bin/time  -f 'artemis dictDB 1 %e %U %S' {input.soft} "
-        "search "
+        "estimate "
         "--database {input.db} "
         "--guides {input.guides} "
-        "--output {output.res} "
-        "--distance 1 "
-        "dictDB; "
+        "--output {output.res}; "
         "}} 2> {output.time};"
         "tail -1 {output.time} >> summary.txt;"
 
+
+rule artemis_run_hashDB_right:
+    input:
+        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
+        db=str("out_dir/artemis_out/db/hashDB/hashDB.bin"),
+        guides="data/all_genes_only_guides.txt"
+    output:
+        res="out_dir/artemis_out/results/hashDB_right.csv",
+        time="out_dir/artemis_out/results/hashDB_right_time.csv"
+    shell:
+        "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
+        "{{ /usr/bin/time  -f 'artemis hashDB_right 1 %e %U %S' {input.soft} "
+        "estimate "
+        "--database {input.db} "
+        "--guides {input.guides} "
+        "--output {output.res} "
+        "--right; "
+        "}} 2> {output.time};"
+        "tail -1 {output.time} >> summary.txt;"
+
+
+rule artemis_run_hashDB_left:
+    input:
+        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
+        db=str("out_dir/artemis_out/db/hashDB/hashDB.bin"),
+        guides="data/all_genes_only_guides.txt"
+    output:
+        res="out_dir/artemis_out/results/hashDB_left.csv",
+        time="out_dir/artemis_out/results/hashDB_left_time.csv"
+    shell:
+        "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
+        "{{ /usr/bin/time  -f 'artemis hashDB_left 1 %e %U %S' {input.soft} "
+        "estimate "
+        "--database {input.db} "
+        "--guides {input.guides} "
+        "--output {output.res}; "
+        "}} 2> {output.time};"
+        "tail -1 {output.time} >> summary.txt;"
 
 ## CRISPRITz
 # installed through conda environment
