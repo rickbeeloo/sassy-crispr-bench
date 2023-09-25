@@ -15,7 +15,8 @@ rule all:
             "out_dir/artemis_out/results/esMax_9_4_time.csv", 
             "out_dir/artemis_out/results/esMin_9_4_time.csv", 
             "out_dir/artemis_out/results/esOne_9_4_time.csv",
-            "out_dir/artemis_out/db/dictDB/dictDB.bin"
+            "out_dir/artemis_out/db/dictDB/dictDB.bin",
+            "out_dir/artemis_out/db/hashDB/hashDB.bin"
         ]
 
 
@@ -179,6 +180,23 @@ rule artemis_build_dictDB:
         "--output {output.db} "
         "--distance 1 "
         "--motif Cas9 dictDB"
+
+
+rule artemis_build_hashDB:
+    input:
+        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
+        idx="data/hg38v34.fa.fai",
+        genome="data/hg38v34.fa"
+    output:
+        db="out_dir/artemis_out/db/hashDB/hashDB.bin"
+    shell:
+        "export JULIA_NUM_THREADS={config[threads_build]}; mkdir -p $(dirname {output.db}); "
+        "soft/ARTEMIS.jl/build/bin/ARTEMIS build "
+        "--name hashDB_default_Cas9_hg38v34 "
+        "--genome {input.genome} "
+        "--output {output.db} "
+        "--distance 1 "
+        "--motif Cas9 hashDB"
 
 
 ## CRISPRITz
