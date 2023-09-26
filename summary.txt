@@ -26,3 +26,6 @@ CRISPRitz search 2 235.40 218.61 16.77
 artemis esOne 1 46.49 552.11 28.45
 artemis esMax 4 8896.21 122624.04 1357.79
 artemis esMin 4 1024.26 12532.86 178.72
+artemis hashDB_left 1 640.67 1199.24 205.79
+artemis dictDB 1 671.93 1218.90 111.00
+artemis hashDB_right 1 637.83 1208.65 210.24
