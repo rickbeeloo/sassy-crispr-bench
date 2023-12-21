@@ -5,19 +5,20 @@ configfile: "config.yaml"
 
 rule all:
     input:
-        [
-            expand("out_dir/artemis_out/results/{db_kind}_{prefix}_{dist}_time.csv", 
-                db_kind=config["artemis"], prefix=config["prefix"], dist=config["dist"]),
-            expand("out_dir/crispritz_out/results/crispritz_{dist}_time.csv", 
-                dist=config["dist"]), 
-            expand("out_dir/cas-offinder_out/results/casoffinder_{dist}_time.txt",
-                dist=config["dist"]),
-            "out_dir/artemis_out/results/esMax_9_4_time.csv", 
-            "out_dir/artemis_out/results/esMin_9_4_time.csv", 
-            "out_dir/artemis_out/results/esOne_9_4_time.csv",
-            "out_dir/artemis_out/results/dictDB_time.csv",
-            "out_dir/artemis_out/results/hashDB_right_time.csv",
-            "out_dir/artemis_out/results/hashDB_left_time.csv"
+        [   
+            "out_dir/artemis_out/results/bffDB_3_time.csv",
+            #expand("out_dir/artemis_out/results/{db_kind}_{prefix}_{dist}_time.csv", 
+            #    db_kind=config["artemis"], prefix=config["prefix"], dist=config["dist"]),
+            #expand("out_dir/crispritz_out/results/crispritz_{dist}_time.csv", 
+            #    dist=config["dist"]), 
+            #expand("out_dir/cas-offinder_out/results/casoffinder_{dist}_time.txt",
+            #    dist=config["dist"]),
+            #"out_dir/artemis_out/results/esMax_9_4_time.csv", 
+            #"out_dir/artemis_out/results/esMin_9_4_time.csv", 
+            #"out_dir/artemis_out/results/esOne_9_4_time.csv",
+            #"out_dir/artemis_out/results/dictDB_time.csv",
+            #"out_dir/artemis_out/results/hashDB_right_time.csv",
+            #"out_dir/artemis_out/results/hashDB_left_time.csv"
         ]
 
 
@@ -256,6 +257,63 @@ rule artemis_run_hashDB_left:
         "--output {output.res}; "
         "}} 2> {output.time};"
         "tail -1 {output.time} >> summary.txt;"
+
+
+#BINARY FUSE FILTER + FM-index
+rule artemis_build_bff:
+    input:
+        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
+        idx="data/hg38v34.fa.fai",
+        genome="data/hg38v34.fa"
+    output:
+        db=str("out_dir/artemis_out/db/bffDB_3/BinaryFuseFilterDB.bin")
+    shell:
+        "export JULIA_NUM_THREADS={config[threads_build]}; "
+        "soft/ARTEMIS.jl/build/bin/ARTEMIS build "
+        "--name bffDB_3_Cas9_hg38v34 "
+        "--genome {input.genome} "
+        "-o out_dir/artemis_out/db/bffDB_3/ "
+        "--distance 3 "
+        "--motif Cas9 bffDB"
+
+
+rule artemis_build_fmi:
+    input:
+        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
+        idx="data/hg38v34.fa.fai",
+        genome="data/hg38v34.fa"
+    output:
+        db=str("out_dir/artemis_out/db/fmi/genomeInfo.bin")
+    shell:
+        "export JULIA_NUM_THREADS={config[threads_build]}; "
+        "soft/ARTEMIS.jl/build/bin/ARTEMIS build "
+        "--name fmi_Cas9_hg38v34 "
+        "--genome {input.genome} "
+        "-o out_dir/artemis_out/db/fmi/ "
+        "--distance 3 "
+        "--motif Cas9 fmi"
+
+
+rule artemis_run_bff:
+    input:
+        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
+        db=[str("out_dir/artemis_out/db/bffDB_3/BinaryFuseFilterDB.bin"), "out_dir/artemis_out/db/fmi/genomeInfo.bin"],
+        guides="data/curated_guides_wo_PAM.txt"
+    output:
+        res="out_dir/artemis_out/results/bffDB_3.csv",
+        time="out_dir/artemis_out/results/bffDB_3_time.csv"
+    shell:
+        "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
+        "{{ /usr/bin/time  -f 'artemis bffDB 3 %e %U %S' {input.soft} "
+        "search "
+        "--database out_dir/artemis_out/db/bffDB_3/ "
+        "--guides {input.guides} "
+        "--output {output.res} "
+        "--distance 3 "
+        "--fmiDB out_dir/artemis_out/db/fmi/ "
+        "bffDB; }} 2> {output.time};"
+
+
 
 ## CRISPRITz
 # installed through conda environment
