@@ -303,15 +303,15 @@ rule artemis_run_bff:
         res="out_dir/artemis_out/results/bffDB_3.csv",
         time="out_dir/artemis_out/results/bffDB_3_time.csv"
     shell:
-        "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
+        "export JULIA_NUM_THREADS=4; mkdir -p $(dirname {output.time}); touch {output.time}; "
         "{{ /usr/bin/time  -f 'artemis bffDB 3 %e %U %S' {input.soft} "
         "search "
         "--database out_dir/artemis_out/db/bffDB_3/ "
         "--guides {input.guides} "
         "--output {output.res} "
-        "--distance 3 "
-        "--fmiDB out_dir/artemis_out/db/fmi/ "
-        "bffDB; }} 2> {output.time};"
+        "--distance 3 bffDB "
+        "--fmiDB out_dir/artemis_out/db/fmi/; }} "
+        "2> {output.time};"
 
 
 
