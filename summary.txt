@@ -29,3 +29,5 @@ artemis esMin 4 1024.26 12532.86 178.72
 artemis hashDB_left 1 640.67 1199.24 205.79
 artemis dictDB 1 671.93 1218.90 111.00
 artemis hashDB_right 1 637.83 1208.65 210.24
+artemis bffDB 3 778.38 473.35 304.67
+

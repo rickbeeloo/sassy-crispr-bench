@@ -298,19 +298,20 @@ rule artemis_run_bff:
     input:
         soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
         db=[str("out_dir/artemis_out/db/bffDB_3/BinaryFuseFilterDB.bin"), "out_dir/artemis_out/db/fmi/genomeInfo.bin"],
+        genome="data/hg38v34.fa",
         guides="data/curated_guides_wo_PAM.txt"
     output:
         res="out_dir/artemis_out/results/bffDB_3.csv",
         time="out_dir/artemis_out/results/bffDB_3_time.csv"
     shell:
-        "export JULIA_NUM_THREADS=4; mkdir -p $(dirname {output.time}); touch {output.time}; "
+        "export JULIA_NUM_THREADS=1; mkdir -p $(dirname {output.time}); touch {output.time}; "
         "{{ /usr/bin/time  -f 'artemis bffDB 3 %e %U %S' {input.soft} "
         "search "
         "--database out_dir/artemis_out/db/bffDB_3/ "
         "--guides {input.guides} "
         "--output {output.res} "
         "--distance 3 bffDB "
-        "--fmiDB out_dir/artemis_out/db/fmi/; }} "
+        "--fmiDB out_dir/artemis_out/db/fmi/ --genome {input.genome}; }} "
         "2> {output.time};"
 
 
