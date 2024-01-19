@@ -277,8 +277,7 @@ rule artemis_build_bff:
         "--genome {input.genome} "
         "-o out_dir/artemis_out/db/bffDB_{wildcards.restrict_to_len}_{wildcards.dist}/ "
         "--distance {wildcards.dist} "
-        "--restrict_to_len {wildcards.restrict_to_len}"
-        "--motif Cas9 bffDB"
+        "--motif Cas9 bffDB --restrict_to_len {wildcards.restrict_to_len}"
 
 
 rule artemis_build_fmi:
