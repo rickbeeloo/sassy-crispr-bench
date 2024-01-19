@@ -2,11 +2,14 @@ import sys
 
 configfile: "config.yaml"
 
+wildcard_constraints:
+    db_kind="linearDB|treeDB|motifDB"
+
 
 rule all:
     input:
         [   
-            "out_dir/artemis_out/results/bffDB_3_time.csv",
+            expand("out_dir/artemis_out/results/bffDB_{restrict_to_len}_{dist}_time.csv", restrict_to_len=config["restrict_to_len"], dist=config["dist"])
             #expand("out_dir/artemis_out/results/{db_kind}_{prefix}_{dist}_time.csv", 
             #    db_kind=config["artemis"], prefix=config["prefix"], dist=config["dist"]),
             #expand("out_dir/crispritz_out/results/crispritz_{dist}_time.csv", 
@@ -266,14 +269,15 @@ rule artemis_build_bff:
         idx="data/hg38v34.fa.fai",
         genome="data/hg38v34.fa"
     output:
-        db=str("out_dir/artemis_out/db/bffDB_3/BinaryFuseFilterDB.bin")
+        db=str("out_dir/artemis_out/db/bffDB_{restrict_to_len}_{dist}/BinaryFuseFilterDB.bin")
     shell:
         "export JULIA_NUM_THREADS={config[threads_build]}; "
         "soft/ARTEMIS.jl/build/bin/ARTEMIS build "
-        "--name bffDB_3_Cas9_hg38v34 "
+        "--name bffDB_{wildcards.restrict_to_len}_{wildcards.dist}_Cas9_hg38v34 "
         "--genome {input.genome} "
-        "-o out_dir/artemis_out/db/bffDB_3/ "
-        "--distance 3 "
+        "-o out_dir/artemis_out/db/bffDB_{wildcards.restrict_to_len}_{wildcards.dist}/ "
+        "--distance {wildcards.dist} "
+        "--restrict_to_len {wildcards.restrict_to_len}"
         "--motif Cas9 bffDB"
 
 
@@ -297,22 +301,23 @@ rule artemis_build_fmi:
 rule artemis_run_bff:
     input:
         soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
-        db=[str("out_dir/artemis_out/db/bffDB_3/BinaryFuseFilterDB.bin"), "out_dir/artemis_out/db/fmi/genomeInfo.bin"],
+        db=[str("out_dir/artemis_out/db/bffDB_{restrict_to_len}_{dist}/BinaryFuseFilterDB.bin"), "out_dir/artemis_out/db/fmi/genomeInfo.bin"],
         genome="data/hg38v34.fa",
         guides="data/curated_guides_wo_PAM.txt"
     output:
-        res="out_dir/artemis_out/results/bffDB_3.csv",
-        time="out_dir/artemis_out/results/bffDB_3_time.csv"
+        res="out_dir/artemis_out/results/bffDB_{restrict_to_len}_{dist}.csv",
+        time="out_dir/artemis_out/results/bffDB_{restrict_to_len}_{dist}_time.csv"
     shell:
         "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
-        "{{ /usr/bin/time  -f 'artemis bffDB 3 %e %U %S' {input.soft} "
+        "{{ /usr/bin/time  -f 'artemis bffDB_{wildcards.restrict_to_len} {wildcards.dist} %e %U %S' {input.soft} "
         "search "
-        "--database out_dir/artemis_out/db/bffDB_3/ "
+        "--database out_dir/artemis_out/db/bffDB_{wildcards.restrict_to_len}_{wildcards.dist}/ "
         "--guides {input.guides} "
         "--output {output.res} "
-        "--distance 3 bffDB "
+        "--distance {wildcards.dist} bffDB "
         "--fmiDB out_dir/artemis_out/db/fmi/ --genome {input.genome}; }} "
         "2> {output.time};"
+        "tail -1 {output.time} >> summary.txt;"
 
 
 
