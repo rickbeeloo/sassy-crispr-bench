@@ -29,13 +29,10 @@ artemis esMin 4 1024.26 12532.86 178.72
 artemis hashDB_left 1 640.67 1199.24 205.79
 artemis dictDB 1 671.93 1218.90 111.00
 artemis hashDB_right 1 637.83 1208.65 210.24
-artemis bffDB_with_pos_filter 3 843.07 11829.37 466.60
-artemis bffDB 3 821.93 11581.59 410.63
 artemis bffDB_20 3 992.94 12823.96 1732.68
 artemis bffDB_17 3 866.12 12157.77 483.93
 artemis bffDB_15 3 387.24 4895.18 420.24
 artemis bffDB_14 3 464.82 4585.93 300.64
-artemis bffDB_13 3 1528.90 11268.50 358.71
 artemis bffDB_18 2 10.60 93.79 24.59
 artemis bffDB_17 2 9.77 79.64 20.11
 artemis bffDB_16 2 10.88 107.91 16.10
@@ -46,3 +43,10 @@ artemis bffDB_20 2 15.16 154.33 26.94
 artemis bffDB_15 4 28405.13 394855.40 11836.30
 artemis bffDB_17 4 40776.88 578900.83 16567.96
 artemis bffDB_16 3 782.81 10953.87 399.76
+artemis bffDB_20 0 4.63 20.95 9.59
+artemis bffDB_19 1 4.63 20.63 9.74
+artemis bffDB_18 1 4.87 23.02 10.43
+artemis bffDB_17 1 4.67 21.09 10.33
+artemis bffDB_15 1 4.71 20.53 9.63
+artemis bffDB_17 0 4.64 20.32 9.68
+artemis bffDB_16 0 4.50 21.05 9.70
