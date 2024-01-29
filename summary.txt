@@ -50,3 +50,12 @@ artemis bffDB_17 1 4.67 21.09 10.33
 artemis bffDB_15 1 4.71 20.53 9.63
 artemis bffDB_17 0 4.64 20.32 9.68
 artemis bffDB_16 0 4.50 21.05 9.70
+artemis linearHashDB_15_7 3 405.00 5289.36 566.88
+artemis linearHashDB_16_7 3 414.63 5456.70 583.89
+artemis linearHashDB_14_7 3 410.30 5390.74 596.91
+artemis linearHashDB_17_7 3 403.09 5273.60 573.65
+artemis linearHashDB_13_7 3 426.10 5608.63 601.85
+artemis linearHashDB_16_6 3 697.95 9111.72 1044.67
+artemis linearHashDB_15_6 3 701.17 9192.58 1059.80
+artemis linearHashDB_14_6 3 705.23 9183.00 1058.58
+artemis linearHashDB_17_6 3 704.62 9253.88 1056.30
