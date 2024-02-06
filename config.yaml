@@ -1,7 +1,7 @@
-dist: [0, 1, 2, 4]
+dist: [0, 1, 2, 3, 4]
 max_dist: 4
-prefix: 9
-restrict_to_len: [15]
+prefix: 8
+restrict_to_len: [16]
 threads_run: 15
-threads_build: 1
+threads_build: 30
 artemis: ["linearDB", "treeDB", "motifDB"]
