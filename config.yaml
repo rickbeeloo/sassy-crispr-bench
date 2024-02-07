@@ -3,5 +3,5 @@ max_dist: 4
 prefix: 8
 restrict_to_len: [16]
 threads_run: 15
-threads_build: 30
+threads_build: 1
 artemis: ["linearDB", "treeDB", "motifDB"]

@@ -64,3 +64,8 @@ artemis linearHashDB_16_8_fast 0 5.03 34.93 15.01
 artemis linearHashDB_16_8_fast 2 33.55 411.97 49.84
 artemis linearHashDB_16_8_fast 4 335.75 4313.55 553.60
 artemis linearHashDB_16_8_fast 3 112.08 1404.79 199.30
+artemis linearHashDB_16_8 3 244.88 3217.49 309.16
+artemis linearHashDB_16_8 0 8.28 59.21 29.61
+artemis linearHashDB_16_8 4 624.72 8269.31 807.32
+artemis linearHashDB_16_8 1 14.33 131.49 33.57
+artemis linearHashDB_16_8 2 77.91 1016.81 75.28
