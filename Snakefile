@@ -3,20 +3,24 @@ import sys
 configfile: "config.yaml"
 
 wildcard_constraints:
-    db_kind="linearDB|treeDB|motifDB"
-
+    db_kind="linearDB|treeDB|motifDB",
+    prefix="5|6|7|8|9|10",
+    dist="0|1|2|3|4|5|6",
+    restrict_to_len="14|15|16|17|18|19|20"
 
 rule all:
     input:
         [   
-            expand("out_dir/artemis_out/results/linearHashDB_{prefix}_{restrict_to_len}_{dist}_time.csv", prefix=config["prefix"], restrict_to_len=config["restrict_to_len"], dist=config["dist"])
-            #expand("out_dir/artemis_out/results/bffDB_{restrict_to_len}_{dist}_time.csv", restrict_to_len=config["restrict_to_len"], dist=config["dist"])
-            #expand("out_dir/artemis_out/results/{db_kind}_{prefix}_{dist}_time.csv", 
-            #    db_kind=config["artemis"], prefix=config["prefix"], dist=config["dist"]),
-            #expand("out_dir/crispritz_out/results/crispritz_{dist}_time.csv", 
-            #    dist=config["dist"]), 
-            #expand("out_dir/cas-offinder_out/results/casoffinder_{dist}_time.txt",
-            #    dist=config["dist"]),
+            expand("out_dir/artemis_out/results/linearHashDB_{prefix}_{restrict_to_len}_{dist}_time.csv", prefix=config["prefix"], restrict_to_len=config["restrict_to_len"], dist=config["dist"]),
+            #"out_dir/artemis_out/results/linearHashDB_with_es_max_8_16_3_time.csv",
+            #"out_dir/artemis_out/results/linearHashDB_with_es_min_8_16_3_time.csv"
+            expand("out_dir/artemis_out/results/bffDB_{restrict_to_len}_{dist}_time.csv", restrict_to_len=config["restrict_to_len"], dist=config["dist"])
+            expand("out_dir/artemis_out/results/{db_kind}_{prefix}_{dist}_time.csv", 
+                db_kind=config["artemis"], prefix=config["prefix"], dist=config["dist"]),
+            expand("out_dir/crispritz_out/results/crispritz_{dist}_time.csv", 
+                dist=config["dist"]), 
+            expand("out_dir/cas-offinder_out/results/casoffinder_{dist}_time.txt",
+                dist=config["dist"]),
             #"out_dir/artemis_out/results/esMax_9_4_time.csv", 
             #"out_dir/artemis_out/results/esMin_9_4_time.csv", 
             #"out_dir/artemis_out/results/esOne_9_4_time.csv",
@@ -142,6 +146,50 @@ rule artemis_run_linearHashDB:
         "tail -1 {output.time} >> summary.txt;"
 
 
+rule artemis_run_linearHashDB_with_es_max:
+    input:
+        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
+        db=str("out_dir/artemis_out/db/linearHashDB_8_16_4/linearHashDB.bin"),
+        guides="data/curated_guides_wo_PAM.txt"
+    output:
+        res="out_dir/artemis_out/results/linearHashDB_with_es_max_8_16_3.csv",
+        time="out_dir/artemis_out/results/linearHashDB_with_es_max_8_16_3_time.csv"
+    shell:
+        "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
+        "{{ /usr/bin/time  -f 'artemis linearHashDB_with_es_max_8_16 3 %e %U %S' {input.soft} "
+        "search "
+        "--database out_dir/artemis_out/db/linearHashDB_8_16_4/ "
+        "--guides {input.guides} "
+        "--output {output.res} "
+        "--distance 3 "
+        "linearHashDB "
+        "--early_stopping 10000 10000 10000 10000; "
+        " }} 2> {output.time};"
+        "tail -1 {output.time} >> summary.txt;"
+
+
+rule artemis_run_linearHashDB_with_es_min:
+    input:
+        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
+        db=str("out_dir/artemis_out/db/linearHashDB_8_16_4/linearHashDB.bin"),
+        guides="data/curated_guides_wo_PAM.txt"
+    output:
+        res="out_dir/artemis_out/results/linearHashDB_with_es_min_8_16_3.csv",
+        time="out_dir/artemis_out/results/linearHashDB_with_es_min_8_16_3_time.csv"
+    shell:
+        "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
+        "{{ /usr/bin/time  -f 'artemis linearHashDB_with_es_min_8_16 3 %e %U %S' {input.soft} "
+        "search "
+        "--database out_dir/artemis_out/db/linearHashDB_8_16_4/ "
+        "--guides {input.guides} "
+        "--output {output.res} "
+        "--distance 3 "
+        "linearHashDB "
+        "--early_stopping 1 1 1 1; "
+        " }} 2> {output.time};"
+        "tail -1 {output.time} >> summary.txt;"
+
+
 rule early_stopping_max:
     input:
         soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
@@ -159,7 +207,7 @@ rule early_stopping_max:
         "--output {output.res} "
         "--distance 4 "
         "linearDB "
-        "--early_stopping 1000000 1000000 1000000 1000000 1000000; "
+        "--early_stopping {wildcards.es}; "
         "}} 2> {output.time};"
         "tail -1 {output.time} >> summary.txt;"
  
@@ -181,7 +229,7 @@ rule early_stopping_min:
         "--output {output.res} "
         "--distance 4 "
         "linearDB "
-        "--early_stopping 1 1 10 50 200; "
+        "--early_stopping {wildcards.es}; "
         "}} 2> {output.time};"
         "tail -1 {output.time} >> summary.txt;"
 
