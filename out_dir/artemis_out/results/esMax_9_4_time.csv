@@ -1,3 +1,0 @@
-┌ Warning: Your early stopping condition contains large numbers.You might run out of memory and the program may potentially crush.
-└ @ ARTEMIS ~/Soft/julia-dev/ARTEMIS.jl/src/db_linear.jl:304
-artemis esMax 4 8896.21 122624.04 1357.79

@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/artemis-benchmark.iml" filepath="$PROJECT_DIR$/.idea/artemis-benchmark.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/chopoff-benchmark.iml" filepath="$PROJECT_DIR$/.idea/chopoff-benchmark.iml" />
     </modules>
   </component>
 </project>

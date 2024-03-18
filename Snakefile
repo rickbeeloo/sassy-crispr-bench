@@ -11,23 +11,23 @@ wildcard_constraints:
 rule all:
     input:
         [  
-            expand("out_dir/artemis_out/results/prefixHashDB_{restrict_to_len}_{dist}_time.csv", 
+            expand("out_dir/chopoff_out/results/prefixHashDB_{restrict_to_len}_{dist}_time.csv", 
                 restrict_to_len=config["restrict_to_len"], dist=config["dist"]),
-            #"out_dir/artemis_out/results/linearHashDB_with_es_max_8_16_3_time.csv",
-            #"out_dir/artemis_out/results/linearHashDB_with_es_min_8_16_3_time.csv"
-            #expand("out_dir/artemis_out/results/bffDB_{restrict_to_len}_{dist}_time.csv", restrict_to_len=config["restrict_to_len"], dist=config["dist"])
-            #expand("out_dir/artemis_out/results/{db_kind}_{prefix}_{dist}_time.csv", 
-            #    db_kind=config["artemis"], prefix=config["prefix"], dist=config["dist"]),
+            #"out_dir/chopoff_out/results/linearHashDB_with_es_max_8_16_3_time.csv",
+            #"out_dir/chopoff_out/results/linearHashDB_with_es_min_8_16_3_time.csv"
+            #expand("out_dir/chopoff_out/results/bffDB_{restrict_to_len}_{dist}_time.csv", restrict_to_len=config["restrict_to_len"], dist=config["dist"])
+            #expand("out_dir/chopoff_out/results/{db_kind}_{prefix}_{dist}_time.csv", 
+            #    db_kind=config["chopoff"], prefix=config["prefix"], dist=config["dist"]),
             #expand("out_dir/crispritz_out/results/crispritz_{dist}_time.csv", 
             #    dist=config["dist"]), 
             #expand("out_dir/cas-offinder_out/results/casoffinder_{dist}_time.txt",
             #    dist=config["dist"]),
-            #"out_dir/artemis_out/results/esMax_9_4_time.csv", 
-            #"out_dir/artemis_out/results/esMin_9_4_time.csv", 
-            #"out_dir/artemis_out/results/esOne_9_4_time.csv",
-            #"out_dir/artemis_out/results/dictDB_time.csv",
-            #"out_dir/artemis_out/results/hashDB_right_time.csv",
-            #"out_dir/artemis_out/results/hashDB_left_time.csv"
+            #"out_dir/chopoff_out/results/esMax_9_4_time.csv", 
+            #"out_dir/chopoff_out/results/esMin_9_4_time.csv", 
+            #"out_dir/chopoff_out/results/esOne_9_4_time.csv",
+            #"out_dir/chopoff_out/results/dictDB_time.csv",
+            #"out_dir/chopoff_out/results/hashDB_right_time.csv",
+            #"out_dir/chopoff_out/results/hashDB_left_time.csv"
         ]
 
 
@@ -58,51 +58,51 @@ rule download_genome:
         """
 
 
-## ARTEMIS.jl
+## CHOPOFF.jl
 
-rule clone_and_build_artemis:
+rule clone_and_build_chopoff:
     output:
-        "soft/ARTEMIS.jl/build/bin/ARTEMIS"
+        "soft/CHOPOFF.jl/build/bin/CHOPOFF"
     shell:
         """
-        rm -rf soft/ARTEMIS.jl
-        git clone https://github.com/JokingHero/ARTEMIS.jl soft/ARTEMIS.jl
-        cd soft/ARTEMIS.jl
+        rm -rf soft/CHOPOFF.jl
+        git clone https://github.com/JokingHero/CHOPOFF.jl soft/CHOPOFF.jl
+        cd soft/CHOPOFF.jl
         ./build_standalone.sh
         """
 
 
 # this should only run for the largest distance once - other distances can then reuse
-rule artemis_build_trio:
+rule chopoff_build_trio:
     input:
-        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
+        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
         idx="data/hg38v34.fa.fai",
         genome="data/hg38v34.fa"
     output:
-        db=str("out_dir/artemis_out/db/{db_kind}_{prefix}_" f"{config['max_dist']}" "/{db_kind}.bin")
+        db=str("out_dir/chopoff_out/db/{db_kind}_{prefix}_" f"{config['max_dist']}" "/{db_kind}.bin")
     shell:
         "export JULIA_NUM_THREADS={config[threads_build]}; "
-        "soft/ARTEMIS.jl/build/bin/ARTEMIS build "
+        "soft/CHOPOFF.jl/build/bin/CHOPOFF build "
         "--name {wildcards.db_kind}_{wildcards.prefix}_{config[max_dist]}_Cas9_hg38v34 "
         "--genome {input.genome} "
-        "-o out_dir/artemis_out/db/{wildcards.db_kind}_{wildcards.prefix}_{config[max_dist]}/ "
+        "-o out_dir/chopoff_out/db/{wildcards.db_kind}_{wildcards.prefix}_{config[max_dist]}/ "
         "--distance {config[max_dist]} "
         "--motif Cas9 {wildcards.db_kind} --prefix_length {wildcards.prefix}"
 
 
-rule artemis_run_trio:
+rule chopoff_run_trio:
     input:
-        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
-        db=str("out_dir/artemis_out/db/{db_kind}_{prefix}_" f"{config['max_dist']}" "/{db_kind}.bin"),
+        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
+        db=str("out_dir/chopoff_out/db/{db_kind}_{prefix}_" f"{config['max_dist']}" "/{db_kind}.bin"),
         guides="data/curated_guides_wo_PAM.txt"
     output:
-        res="out_dir/artemis_out/results/{db_kind}_{prefix}_{dist}.csv",
-        time="out_dir/artemis_out/results/{db_kind}_{prefix}_{dist}_time.csv"
+        res="out_dir/chopoff_out/results/{db_kind}_{prefix}_{dist}.csv",
+        time="out_dir/chopoff_out/results/{db_kind}_{prefix}_{dist}_time.csv"
     shell:
         "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
-        "{{ /usr/bin/time  -f 'artemis {wildcards.db_kind} {wildcards.dist} %e %U %S' {input.soft} "
+        "{{ /usr/bin/time  -f 'chopoff {wildcards.db_kind} {wildcards.dist} %e %U %S' {input.soft} "
         "search "
-        "--database out_dir/artemis_out/db/{wildcards.db_kind}_{wildcards.prefix}_{config[max_dist]}/ "
+        "--database out_dir/chopoff_out/db/{wildcards.db_kind}_{wildcards.prefix}_{config[max_dist]}/ "
         "--guides {input.guides} "
         "--output {output.res} "
         "--distance {wildcards.dist} "
@@ -110,36 +110,36 @@ rule artemis_run_trio:
         "tail -1 {output.time} >> summary.txt;"
 
 
-rule artemis_build_prefixHashDB:
+rule chopoff_build_prefixHashDB:
     input:
-        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
+        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
         idx="data/hg38v34.fa.fai",
         genome="data/hg38v34.fa"
     output:
-        db=str("out_dir/artemis_out/db/prefixHashDB_{restrict_to_len}_" f"{config['max_dist']}" "/prefixHashDB.bin")
+        db=str("out_dir/chopoff_out/db/prefixHashDB_{restrict_to_len}_" f"{config['max_dist']}" "/prefixHashDB.bin")
     shell:
         "export JULIA_NUM_THREADS={config[threads_build]}; "
-        "soft/ARTEMIS.jl/build/bin/ARTEMIS build "
+        "soft/CHOPOFF.jl/build/bin/CHOPOFF build "
         "--name prefixHashDB_{wildcards.restrict_to_len}_{config[max_dist]}_Cas9_hg38v34 "
         "--genome {input.genome} "
-        "-o out_dir/artemis_out/db/prefixHashDB_{wildcards.restrict_to_len}_{config[max_dist]}/ "
+        "-o out_dir/chopoff_out/db/prefixHashDB_{wildcards.restrict_to_len}_{config[max_dist]}/ "
         "--distance {config[max_dist]} "
         "--motif Cas9 prefixHashDB --hash_length {wildcards.restrict_to_len}"
 
 
-rule artemis_run_prefixHashDB:
+rule chopoff_run_prefixHashDB:
     input:
-        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
-        db=str("out_dir/artemis_out/db/prefixHashDB_{restrict_to_len}_" f"{config['max_dist']}" "/prefixHashDB.bin"),
+        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
+        db=str("out_dir/chopoff_out/db/prefixHashDB_{restrict_to_len}_" f"{config['max_dist']}" "/prefixHashDB.bin"),
         guides="data/curated_guides_wo_PAM.txt"
     output:
-        res="out_dir/artemis_out/results/prefixHashDB_{restrict_to_len}_{dist}.csv",
-        time="out_dir/artemis_out/results/prefixHashDB_{restrict_to_len}_{dist}_time.csv"
+        res="out_dir/chopoff_out/results/prefixHashDB_{restrict_to_len}_{dist}.csv",
+        time="out_dir/chopoff_out/results/prefixHashDB_{restrict_to_len}_{dist}_time.csv"
     shell:
         "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
-        "{{ /usr/bin/time  -f 'artemis prefixHashDB_{wildcards.restrict_to_len} {wildcards.dist} %e %U %S' {input.soft} "
+        "{{ /usr/bin/time  -f 'chopoff prefixHashDB_{wildcards.restrict_to_len} {wildcards.dist} %e %U %S' {input.soft} "
         "search "
-        "--database out_dir/artemis_out/db/prefixHashDB_{wildcards.restrict_to_len}_{config[max_dist]}/ "
+        "--database out_dir/chopoff_out/db/prefixHashDB_{wildcards.restrict_to_len}_{config[max_dist]}/ "
         "--guides {input.guides} "
         "--output {output.res} "
         "--distance {wildcards.dist} "
@@ -147,36 +147,36 @@ rule artemis_run_prefixHashDB:
         "tail -1 {output.time} >> summary.txt;"
 
 
-rule artemis_build_linearHashDB:
+rule chopoff_build_linearHashDB:
     input:
-        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
+        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
         idx="data/hg38v34.fa.fai",
         genome="data/hg38v34.fa"
     output:
-        db=str("out_dir/artemis_out/db/linearHashDB_{prefix}_{restrict_to_len}_" f"{config['max_dist']}" "/linearHashDB.bin")
+        db=str("out_dir/chopoff_out/db/linearHashDB_{prefix}_{restrict_to_len}_" f"{config['max_dist']}" "/linearHashDB.bin")
     shell:
         "export JULIA_NUM_THREADS={config[threads_build]}; "
-        "soft/ARTEMIS.jl/build/bin/ARTEMIS build "
+        "soft/CHOPOFF.jl/build/bin/CHOPOFF build "
         "--name linearHashDB_{wildcards.prefix}_{wildcards.restrict_to_len}_{config[max_dist]}_Cas9_hg38v34 "
         "--genome {input.genome} "
-        "-o out_dir/artemis_out/db/linearHashDB_{wildcards.prefix}_{wildcards.restrict_to_len}_{config[max_dist]}/ "
+        "-o out_dir/chopoff_out/db/linearHashDB_{wildcards.prefix}_{wildcards.restrict_to_len}_{config[max_dist]}/ "
         "--distance {config[max_dist]} "
         "--motif Cas9 linearHashDB --prefix_length {wildcards.prefix} --hash_length {wildcards.restrict_to_len}"
 
 
-rule artemis_run_linearHashDB:
+rule chopoff_run_linearHashDB:
     input:
-        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
-        db=str("out_dir/artemis_out/db/linearHashDB_{prefix}_{restrict_to_len}_" f"{config['max_dist']}" "/linearHashDB.bin"),
+        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
+        db=str("out_dir/chopoff_out/db/linearHashDB_{prefix}_{restrict_to_len}_" f"{config['max_dist']}" "/linearHashDB.bin"),
         guides="data/curated_guides_wo_PAM.txt"
     output:
-        res="out_dir/artemis_out/results/linearHashDB_{prefix}_{restrict_to_len}_{dist}.csv",
-        time="out_dir/artemis_out/results/linearHashDB_{prefix}_{restrict_to_len}_{dist}_time.csv"
+        res="out_dir/chopoff_out/results/linearHashDB_{prefix}_{restrict_to_len}_{dist}.csv",
+        time="out_dir/chopoff_out/results/linearHashDB_{prefix}_{restrict_to_len}_{dist}_time.csv"
     shell:
         "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
-        "{{ /usr/bin/time  -f 'artemis linearHashDB_{wildcards.restrict_to_len} {wildcards.dist} %e %U %S' {input.soft} "
+        "{{ /usr/bin/time  -f 'chopoff linearHashDB_{wildcards.restrict_to_len} {wildcards.dist} %e %U %S' {input.soft} "
         "search "
-        "--database out_dir/artemis_out/db/linearHashDB_{wildcards.prefix}_{wildcards.restrict_to_len}_{config[max_dist]}/ "
+        "--database out_dir/chopoff_out/db/linearHashDB_{wildcards.prefix}_{wildcards.restrict_to_len}_{config[max_dist]}/ "
         "--guides {input.guides} "
         "--output {output.res} "
         "--distance {wildcards.dist} "
@@ -184,19 +184,19 @@ rule artemis_run_linearHashDB:
         "tail -1 {output.time} >> summary.txt;"
 
 
-rule artemis_run_linearHashDB_with_es_max:
+rule chopoff_run_linearHashDB_with_es_max:
     input:
-        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
-        db=str("out_dir/artemis_out/db/linearHashDB_8_16_4/linearHashDB.bin"),
+        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
+        db=str("out_dir/chopoff_out/db/linearHashDB_8_16_4/linearHashDB.bin"),
         guides="data/curated_guides_wo_PAM.txt"
     output:
-        res="out_dir/artemis_out/results/linearHashDB_with_es_max_8_16_3.csv",
-        time="out_dir/artemis_out/results/linearHashDB_with_es_max_8_16_3_time.csv"
+        res="out_dir/chopoff_out/results/linearHashDB_with_es_max_8_16_3.csv",
+        time="out_dir/chopoff_out/results/linearHashDB_with_es_max_8_16_3_time.csv"
     shell:
         "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
-        "{{ /usr/bin/time  -f 'artemis linearHashDB_with_es_max_8_16 3 %e %U %S' {input.soft} "
+        "{{ /usr/bin/time  -f 'chopoff linearHashDB_with_es_max_8_16 3 %e %U %S' {input.soft} "
         "search "
-        "--database out_dir/artemis_out/db/linearHashDB_8_16_4/ "
+        "--database out_dir/chopoff_out/db/linearHashDB_8_16_4/ "
         "--guides {input.guides} "
         "--output {output.res} "
         "--distance 3 "
@@ -206,19 +206,19 @@ rule artemis_run_linearHashDB_with_es_max:
         "tail -1 {output.time} >> summary.txt;"
 
 
-rule artemis_run_linearHashDB_with_es_min:
+rule chopoff_run_linearHashDB_with_es_min:
     input:
-        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
-        db=str("out_dir/artemis_out/db/linearHashDB_8_16_4/linearHashDB.bin"),
+        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
+        db=str("out_dir/chopoff_out/db/linearHashDB_8_16_4/linearHashDB.bin"),
         guides="data/curated_guides_wo_PAM.txt"
     output:
-        res="out_dir/artemis_out/results/linearHashDB_with_es_min_8_16_3.csv",
-        time="out_dir/artemis_out/results/linearHashDB_with_es_min_8_16_3_time.csv"
+        res="out_dir/chopoff_out/results/linearHashDB_with_es_min_8_16_3.csv",
+        time="out_dir/chopoff_out/results/linearHashDB_with_es_min_8_16_3_time.csv"
     shell:
         "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
-        "{{ /usr/bin/time  -f 'artemis linearHashDB_with_es_min_8_16 3 %e %U %S' {input.soft} "
+        "{{ /usr/bin/time  -f 'chopoff linearHashDB_with_es_min_8_16 3 %e %U %S' {input.soft} "
         "search "
-        "--database out_dir/artemis_out/db/linearHashDB_8_16_4/ "
+        "--database out_dir/chopoff_out/db/linearHashDB_8_16_4/ "
         "--guides {input.guides} "
         "--output {output.res} "
         "--distance 3 "
@@ -230,17 +230,17 @@ rule artemis_run_linearHashDB_with_es_min:
 
 rule early_stopping_max:
     input:
-        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
-        db=str("out_dir/artemis_out/db/linearDB_9_4/linearDB.bin"),
+        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
+        db=str("out_dir/chopoff_out/db/linearDB_9_4/linearDB.bin"),
         guides="data/curated_guides_wo_PAM.txt"
     output:
-        res="out_dir/artemis_out/results/esMax_9_4.csv",
-        time="out_dir/artemis_out/results/esMax_9_4_time.csv"
+        res="out_dir/chopoff_out/results/esMax_9_4.csv",
+        time="out_dir/chopoff_out/results/esMax_9_4_time.csv"
     shell:
         "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
-        "{{ /usr/bin/time  -f 'artemis esMax 4 %e %U %S' {input.soft} "
+        "{{ /usr/bin/time  -f 'chopoff esMax 4 %e %U %S' {input.soft} "
         "search "
-        "--database out_dir/artemis_out/db/linearDB_9_4/ "
+        "--database out_dir/chopoff_out/db/linearDB_9_4/ "
         "--guides {input.guides} "
         "--output {output.res} "
         "--distance 4 "
@@ -252,17 +252,17 @@ rule early_stopping_max:
  
 rule early_stopping_min:
     input:
-        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
-        db=str("out_dir/artemis_out/db/linearDB_9_4/linearDB.bin"),
+        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
+        db=str("out_dir/chopoff_out/db/linearDB_9_4/linearDB.bin"),
         guides="data/curated_guides_wo_PAM.txt"
     output:
-        res="out_dir/artemis_out/results/esMin_9_4.csv",
-        time="out_dir/artemis_out/results/esMin_9_4_time.csv"
+        res="out_dir/chopoff_out/results/esMin_9_4.csv",
+        time="out_dir/chopoff_out/results/esMin_9_4_time.csv"
     shell:
         "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
-        "{{ /usr/bin/time  -f 'artemis esMin 4 %e %U %S' {input.soft} "
+        "{{ /usr/bin/time  -f 'chopoff esMin 4 %e %U %S' {input.soft} "
         "search "
-        "--database out_dir/artemis_out/db/linearDB_9_4/ "
+        "--database out_dir/chopoff_out/db/linearDB_9_4/ "
         "--guides {input.guides} "
         "--output {output.res} "
         "--distance 4 "
@@ -274,17 +274,17 @@ rule early_stopping_min:
 
 rule early_stopping_one:
     input:
-        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
-        db=str("out_dir/artemis_out/db/linearDB_9_4/linearDB.bin"),
+        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
+        db=str("out_dir/chopoff_out/db/linearDB_9_4/linearDB.bin"),
         guides="data/curated_guides_wo_PAM.txt"
     output:
-        res="out_dir/artemis_out/results/esOne_9_4.csv",
-        time="out_dir/artemis_out/results/esOne_9_4_time.csv"
+        res="out_dir/chopoff_out/results/esOne_9_4.csv",
+        time="out_dir/chopoff_out/results/esOne_9_4_time.csv"
     shell:
         "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
-        "{{ /usr/bin/time  -f 'artemis esOne 1 %e %U %S' {input.soft} "
+        "{{ /usr/bin/time  -f 'chopoff esOne 1 %e %U %S' {input.soft} "
         "search "
-        "--database out_dir/artemis_out/db/linearDB_9_4/ "
+        "--database out_dir/chopoff_out/db/linearDB_9_4/ "
         "--guides {input.guides} "
         "--output {output.res} "
         "--distance 1 "
@@ -294,16 +294,16 @@ rule early_stopping_one:
         "tail -1 {output.time} >> summary.txt;"
 
 
-rule artemis_build_dictDB:
+rule chopoff_build_dictDB:
     input:
-        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
+        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
         idx="data/hg38v34.fa.fai",
         genome="data/hg38v34.fa"
     output:
-        db="out_dir/artemis_out/db/dictDB/dictDB.bin"
+        db="out_dir/chopoff_out/db/dictDB/dictDB.bin"
     shell:
         "export JULIA_NUM_THREADS={config[threads_build]}; mkdir -p $(dirname {output.db}); "
-        "soft/ARTEMIS.jl/build/bin/ARTEMIS build "
+        "soft/CHOPOFF.jl/build/bin/CHOPOFF build "
         "--name dictDB_default_Cas9_hg38v34 "
         "--genome {input.genome} "
         "--output {output.db} "
@@ -311,16 +311,16 @@ rule artemis_build_dictDB:
         "--motif Cas9 dictDB"
 
 
-rule artemis_build_hashDB:
+rule chopoff_build_hashDB:
     input:
-        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
+        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
         idx="data/hg38v34.fa.fai",
         genome="data/hg38v34.fa"
     output:
-        db="out_dir/artemis_out/db/hashDB/hashDB.bin"
+        db="out_dir/chopoff_out/db/hashDB/hashDB.bin"
     shell:
         "export JULIA_NUM_THREADS={config[threads_build]}; mkdir -p $(dirname {output.db}); "
-        "soft/ARTEMIS.jl/build/bin/ARTEMIS build "
+        "soft/CHOPOFF.jl/build/bin/CHOPOFF build "
         "--name hashDB_default_Cas9_hg38v34 "
         "--genome {input.genome} "
         "--output {output.db} "
@@ -328,17 +328,17 @@ rule artemis_build_hashDB:
         "--motif Cas9 hashDB"
 
 
-rule artemis_run_dictDB:
+rule chopoff_run_dictDB:
     input:
-        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
-        db=str("out_dir/artemis_out/db/dictDB/dictDB.bin"),
+        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
+        db=str("out_dir/chopoff_out/db/dictDB/dictDB.bin"),
         guides="data/all_genes_only_guides.txt"
     output:
-        res="out_dir/artemis_out/results/dictDB.csv",
-        time="out_dir/artemis_out/results/dictDB_time.csv"
+        res="out_dir/chopoff_out/results/dictDB.csv",
+        time="out_dir/chopoff_out/results/dictDB_time.csv"
     shell:
         "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
-        "{{ /usr/bin/time  -f 'artemis dictDB 1 %e %U %S' {input.soft} "
+        "{{ /usr/bin/time  -f 'chopoff dictDB 1 %e %U %S' {input.soft} "
         "estimate "
         "--database {input.db} "
         "--guides {input.guides} "
@@ -347,17 +347,17 @@ rule artemis_run_dictDB:
         "tail -1 {output.time} >> summary.txt;"
 
 
-rule artemis_run_hashDB_right:
+rule chopoff_run_hashDB_right:
     input:
-        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
-        db=str("out_dir/artemis_out/db/hashDB/hashDB.bin"),
+        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
+        db=str("out_dir/chopoff_out/db/hashDB/hashDB.bin"),
         guides="data/all_genes_only_guides.txt"
     output:
-        res="out_dir/artemis_out/results/hashDB_right.csv",
-        time="out_dir/artemis_out/results/hashDB_right_time.csv"
+        res="out_dir/chopoff_out/results/hashDB_right.csv",
+        time="out_dir/chopoff_out/results/hashDB_right_time.csv"
     shell:
         "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
-        "{{ /usr/bin/time  -f 'artemis hashDB_right 1 %e %U %S' {input.soft} "
+        "{{ /usr/bin/time  -f 'chopoff hashDB_right 1 %e %U %S' {input.soft} "
         "estimate "
         "--database {input.db} "
         "--guides {input.guides} "
@@ -367,17 +367,17 @@ rule artemis_run_hashDB_right:
         "tail -1 {output.time} >> summary.txt;"
 
 
-rule artemis_run_hashDB_left:
+rule chopoff_run_hashDB_left:
     input:
-        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
-        db=str("out_dir/artemis_out/db/hashDB/hashDB.bin"),
+        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
+        db=str("out_dir/chopoff_out/db/hashDB/hashDB.bin"),
         guides="data/all_genes_only_guides.txt"
     output:
-        res="out_dir/artemis_out/results/hashDB_left.csv",
-        time="out_dir/artemis_out/results/hashDB_left_time.csv"
+        res="out_dir/chopoff_out/results/hashDB_left.csv",
+        time="out_dir/chopoff_out/results/hashDB_left_time.csv"
     shell:
         "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
-        "{{ /usr/bin/time  -f 'artemis hashDB_left 1 %e %U %S' {input.soft} "
+        "{{ /usr/bin/time  -f 'chopoff hashDB_left 1 %e %U %S' {input.soft} "
         "estimate "
         "--database {input.db} "
         "--guides {input.guides} "
@@ -387,58 +387,58 @@ rule artemis_run_hashDB_left:
 
 
 #BINARY FUSE FILTER + FM-index
-rule artemis_build_bff:
+rule chopoff_build_bff:
     input:
-        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
+        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
         idx="data/hg38v34.fa.fai",
         genome="data/hg38v34.fa"
     output:
-        db=str("out_dir/artemis_out/db/bffDB_{restrict_to_len}_{dist}/BinaryFuseFilterDB.bin")
+        db=str("out_dir/chopoff_out/db/bffDB_{restrict_to_len}_{dist}/BinaryFuseFilterDB.bin")
     shell:
         "export JULIA_NUM_THREADS={config[threads_build]}; "
-        "soft/ARTEMIS.jl/build/bin/ARTEMIS build "
+        "soft/CHOPOFF.jl/build/bin/CHOPOFF build "
         "--name bffDB_{wildcards.restrict_to_len}_{wildcards.dist}_Cas9_hg38v34 "
         "--genome {input.genome} "
-        "-o out_dir/artemis_out/db/bffDB_{wildcards.restrict_to_len}_{wildcards.dist}/ "
+        "-o out_dir/chopoff_out/db/bffDB_{wildcards.restrict_to_len}_{wildcards.dist}/ "
         "--distance {wildcards.dist} "
         "--motif Cas9 bffDB --restrict_to_len {wildcards.restrict_to_len}"
 
 
-rule artemis_build_fmi:
+rule chopoff_build_fmi:
     input:
-        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
+        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
         idx="data/hg38v34.fa.fai",
         genome="data/hg38v34.fa"
     output:
-        db=str("out_dir/artemis_out/db/fmi/genomeInfo.bin")
+        db=str("out_dir/chopoff_out/db/fmi/genomeInfo.bin")
     shell:
         "export JULIA_NUM_THREADS={config[threads_build]}; "
-        "soft/ARTEMIS.jl/build/bin/ARTEMIS build "
+        "soft/CHOPOFF.jl/build/bin/CHOPOFF build "
         "--name fmi_Cas9_hg38v34 "
         "--genome {input.genome} "
-        "-o out_dir/artemis_out/db/fmi/ "
+        "-o out_dir/chopoff_out/db/fmi/ "
         "--distance 3 "
         "--motif Cas9 fmi"
 
 
-rule artemis_run_bff:
+rule chopoff_run_bff:
     input:
-        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
-        db=[str("out_dir/artemis_out/db/bffDB_{restrict_to_len}_{dist}/BinaryFuseFilterDB.bin"), "out_dir/artemis_out/db/fmi/genomeInfo.bin"],
+        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
+        db=[str("out_dir/chopoff_out/db/bffDB_{restrict_to_len}_{dist}/BinaryFuseFilterDB.bin"), "out_dir/chopoff_out/db/fmi/genomeInfo.bin"],
         genome="data/hg38v34.fa",
         guides="data/curated_guides_wo_PAM.txt"
     output:
-        res="out_dir/artemis_out/results/bffDB_{restrict_to_len}_{dist}.csv",
-        time="out_dir/artemis_out/results/bffDB_{restrict_to_len}_{dist}_time.csv"
+        res="out_dir/chopoff_out/results/bffDB_{restrict_to_len}_{dist}.csv",
+        time="out_dir/chopoff_out/results/bffDB_{restrict_to_len}_{dist}_time.csv"
     shell:
         "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
-        "{{ /usr/bin/time  -f 'artemis bffDB_{wildcards.restrict_to_len} {wildcards.dist} %e %U %S' {input.soft} "
+        "{{ /usr/bin/time  -f 'chopoff bffDB_{wildcards.restrict_to_len} {wildcards.dist} %e %U %S' {input.soft} "
         "search "
-        "--database out_dir/artemis_out/db/bffDB_{wildcards.restrict_to_len}_{wildcards.dist}/ "
+        "--database out_dir/chopoff_out/db/bffDB_{wildcards.restrict_to_len}_{wildcards.dist}/ "
         "--guides {input.guides} "
         "--output {output.res} "
         "--distance {wildcards.dist} bffDB "
-        "--fmiDB out_dir/artemis_out/db/fmi/ --genome {input.genome}; }} "
+        "--fmiDB out_dir/chopoff_out/db/fmi/ --genome {input.genome}; }} "
         "2> {output.time};"
         "tail -1 {output.time} >> summary.txt;"
 

@@ -1,9 +1,9 @@
-# Artemis.jl benchmark
+# Chopoff.jl benchmark
 
 This is a benchmark of speed for finding off-target sites for a given gRNA.
 Currently this pipeline builds and searches for off-target sites within the whole genome for four software packages: 
 
-* ARTEMIS.jl
+* CHOPOFF.jl
 * CRISPRITZ
 * Cas-offinder
 
@@ -22,11 +22,11 @@ bash Mambaforge-Linux-x86_64.sh
 
 To execute the pipeline first build an environment (as per snakemake recommendations this step uses mamba):
 
-`mamba env create --name artemis-benchmark --file environment.yaml`
+`mamba env create --name chopoff-benchmark --file environment.yaml`
 
 Activate the environment:
 
-`conda activate artemis-benchmark`
+`conda activate chopoff-benchmark`
 
 To run the pipeline end-to-end use the command:
 
@@ -47,5 +47,5 @@ of at least 60GB to perform all calculations.
 
 * Cas-offinder requires OpenCL, which is highly system and hardware specific, though it might already be installed and thus Cas-offinder ready to run. To check this the following command can be run to build and check Cas-offinder. If the output recognizes devices under "Available devices list" Cas-offinder should be good to go. 
 
-* ARTEMIS.jl generates a large number of files in its build step, depending on the prefix size for some databases. This can sometimes cause the computer to run out of memory. You could try to make sure many files are allowed for creation, on linux its setting `ulimit -n`.
+* CHOPOFF.jl generates a large number of files in its build step, depending on the prefix size for some databases. This can sometimes cause the computer to run out of memory. You could try to make sure many files are allowed for creation, on linux its setting `ulimit -n`.
 On Ubuntu to fix it I have set `DefaultLimitNOFILE=524288:524288` to /etc/systemd/system.conf and /etc/systemd/user.conf.
