@@ -10,17 +10,18 @@ wildcard_constraints:
 
 rule all:
     input:
-        [   
-            expand("out_dir/artemis_out/results/linearHashDB_{prefix}_{restrict_to_len}_{dist}_time.csv", prefix=config["prefix"], restrict_to_len=config["restrict_to_len"], dist=config["dist"]),
+        [  
+            expand("out_dir/artemis_out/results/prefixHashDB_{restrict_to_len}_{dist}_time.csv", 
+                restrict_to_len=config["restrict_to_len"], dist=config["dist"]),
             #"out_dir/artemis_out/results/linearHashDB_with_es_max_8_16_3_time.csv",
             #"out_dir/artemis_out/results/linearHashDB_with_es_min_8_16_3_time.csv"
-            expand("out_dir/artemis_out/results/bffDB_{restrict_to_len}_{dist}_time.csv", restrict_to_len=config["restrict_to_len"], dist=config["dist"])
-            expand("out_dir/artemis_out/results/{db_kind}_{prefix}_{dist}_time.csv", 
-                db_kind=config["artemis"], prefix=config["prefix"], dist=config["dist"]),
-            expand("out_dir/crispritz_out/results/crispritz_{dist}_time.csv", 
-                dist=config["dist"]), 
-            expand("out_dir/cas-offinder_out/results/casoffinder_{dist}_time.txt",
-                dist=config["dist"]),
+            #expand("out_dir/artemis_out/results/bffDB_{restrict_to_len}_{dist}_time.csv", restrict_to_len=config["restrict_to_len"], dist=config["dist"])
+            #expand("out_dir/artemis_out/results/{db_kind}_{prefix}_{dist}_time.csv", 
+            #    db_kind=config["artemis"], prefix=config["prefix"], dist=config["dist"]),
+            #expand("out_dir/crispritz_out/results/crispritz_{dist}_time.csv", 
+            #    dist=config["dist"]), 
+            #expand("out_dir/cas-offinder_out/results/casoffinder_{dist}_time.txt",
+            #    dist=config["dist"]),
             #"out_dir/artemis_out/results/esMax_9_4_time.csv", 
             #"out_dir/artemis_out/results/esMin_9_4_time.csv", 
             #"out_dir/artemis_out/results/esOne_9_4_time.csv",
@@ -106,6 +107,43 @@ rule artemis_run_trio:
         "--output {output.res} "
         "--distance {wildcards.dist} "
         "{wildcards.db_kind}; }} 2> {output.time};"
+        "tail -1 {output.time} >> summary.txt;"
+
+
+rule artemis_build_prefixHashDB:
+    input:
+        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
+        idx="data/hg38v34.fa.fai",
+        genome="data/hg38v34.fa"
+    output:
+        db=str("out_dir/artemis_out/db/prefixHashDB_{restrict_to_len}_" f"{config['max_dist']}" "/prefixHashDB.bin")
+    shell:
+        "export JULIA_NUM_THREADS={config[threads_build]}; "
+        "soft/ARTEMIS.jl/build/bin/ARTEMIS build "
+        "--name prefixHashDB_{wildcards.restrict_to_len}_{config[max_dist]}_Cas9_hg38v34 "
+        "--genome {input.genome} "
+        "-o out_dir/artemis_out/db/prefixHashDB_{wildcards.restrict_to_len}_{config[max_dist]}/ "
+        "--distance {config[max_dist]} "
+        "--motif Cas9 prefixHashDB --hash_length {wildcards.restrict_to_len}"
+
+
+rule artemis_run_prefixHashDB:
+    input:
+        soft="soft/ARTEMIS.jl/build/bin/ARTEMIS",
+        db=str("out_dir/artemis_out/db/prefixHashDB_{restrict_to_len}_" f"{config['max_dist']}" "/prefixHashDB.bin"),
+        guides="data/curated_guides_wo_PAM.txt"
+    output:
+        res="out_dir/artemis_out/results/prefixHashDB_{restrict_to_len}_{dist}.csv",
+        time="out_dir/artemis_out/results/prefixHashDB_{restrict_to_len}_{dist}_time.csv"
+    shell:
+        "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
+        "{{ /usr/bin/time  -f 'artemis prefixHashDB_{wildcards.restrict_to_len} {wildcards.dist} %e %U %S' {input.soft} "
+        "search "
+        "--database out_dir/artemis_out/db/prefixHashDB_{wildcards.restrict_to_len}_{config[max_dist]}/ "
+        "--guides {input.guides} "
+        "--output {output.res} "
+        "--distance {wildcards.dist} "
+        "prefixHashDB; }} 2> {output.time};"
         "tail -1 {output.time} >> summary.txt;"
 
 

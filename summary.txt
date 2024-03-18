@@ -74,3 +74,26 @@ artemis linearHashDB_16 0 8.64 62.09 28.45
 artemis linearHashDB_16 4 640.87 8507.40 820.86
 artemis linearHashDB_16 1 14.33 133.69 34.80
 artemis linearHashDB_16 2 76.82 1006.15 78.19
+artemis prefixHashDB_16 4 3329.85 43726.92 44.38
+artemis prefixHashDB_16 0 24.71 220.91 2.84
+artemis prefixHashDB_16 3 300.11 4021.02 6.32
+artemis prefixHashDB_16 1 40.64 434.49 2.95
+artemis prefixHashDB_16 2 52.82 599.52 3.08
+# max dist 4 new style
+artemis prefixHashDB_16 4 3273.03 41170.44 39.55
+artemis prefixHashDB_16 0 23.87 197.14 2.80
+artemis prefixHashDB_16 3 294.05 3917.87 6.08
+artemis prefixHashDB_16 1 39.36 420.27 2.75
+artemis prefixHashDB_16 2 56.43 659.35 3.07
+# max dist 4 with speed impr0o
+artemis prefixHashDB_16 4 69.05 814.53 33.13
+artemis prefixHashDB_16 0 10.98 9.24 1.82
+artemis prefixHashDB_16 3 13.71 43.00 5.56
+artemis prefixHashDB_16 1 10.89 9.23 1.76
+artemis prefixHashDB_16 2 10.69 9.64 2.25
+# max dist 4 with speed improvements, second test because the speeds are incredible
+artemis prefixHashDB_16 4 64.03 711.14 31.13
+artemis prefixHashDB_16 0 10.34 8.70 1.72
+artemis prefixHashDB_16 3 13.15 40.47 4.74
+artemis prefixHashDB_16 1 10.15 8.60 1.66
+artemis prefixHashDB_16 2 10.18 9.36 2.02
