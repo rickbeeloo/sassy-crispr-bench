@@ -13,21 +13,14 @@ rule all:
         [  
             expand("out_dir/chopoff_out/results/prefixHashDB_{restrict_to_len}_{dist}_time.csv", 
                 restrict_to_len=config["restrict_to_len"], dist=config["dist"]),
-            #"out_dir/chopoff_out/results/linearHashDB_with_es_max_8_16_3_time.csv",
-            #"out_dir/chopoff_out/results/linearHashDB_with_es_min_8_16_3_time.csv"
-            #expand("out_dir/chopoff_out/results/bffDB_{restrict_to_len}_{dist}_time.csv", restrict_to_len=config["restrict_to_len"], dist=config["dist"])
-            #expand("out_dir/chopoff_out/results/{db_kind}_{prefix}_{dist}_time.csv", 
-            #    db_kind=config["chopoff"], prefix=config["prefix"], dist=config["dist"]),
-            #expand("out_dir/crispritz_out/results/crispritz_{dist}_time.csv", 
-            #    dist=config["dist"]), 
-            #expand("out_dir/cas-offinder_out/results/casoffinder_{dist}_time.txt",
-            #    dist=config["dist"]),
-            #"out_dir/chopoff_out/results/esMax_9_4_time.csv", 
-            #"out_dir/chopoff_out/results/esMin_9_4_time.csv", 
-            #"out_dir/chopoff_out/results/esOne_9_4_time.csv",
-            #"out_dir/chopoff_out/results/dictDB_time.csv",
-            #"out_dir/chopoff_out/results/hashDB_right_time.csv",
-            #"out_dir/chopoff_out/results/hashDB_left_time.csv"
+            #expand("out_dir/chopoff_out/results/bffDB_{restrict_to_len}_{dist}_time.csv", 
+            #    restrict_to_len=config["restrict_to_len"], dist=config["dist"]),
+            expand("out_dir/chopoff_out/results/{db_kind}_{prefix}_{dist}_time.csv", 
+                db_kind=config["chopoff"], prefix=config["prefix"], dist=config["dist"]),
+            expand("out_dir/crispritz_out/results/crispritz_{dist}_time.csv", 
+                dist=config["dist"]), 
+            expand("out_dir/cas-offinder_out/results/casoffinder_{dist}_time.txt",
+                dist=config["dist"]),
         ]
 
 
@@ -59,7 +52,6 @@ rule download_genome:
 
 
 ## CHOPOFF.jl
-
 rule clone_and_build_chopoff:
     output:
         "soft/CHOPOFF.jl/build/bin/CHOPOFF"
@@ -144,245 +136,6 @@ rule chopoff_run_prefixHashDB:
         "--output {output.res} "
         "--distance {wildcards.dist} "
         "prefixHashDB; }} 2> {output.time};"
-        "tail -1 {output.time} >> summary.txt;"
-
-
-rule chopoff_build_linearHashDB:
-    input:
-        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
-        idx="data/hg38v34.fa.fai",
-        genome="data/hg38v34.fa"
-    output:
-        db=str("out_dir/chopoff_out/db/linearHashDB_{prefix}_{restrict_to_len}_" f"{config['max_dist']}" "/linearHashDB.bin")
-    shell:
-        "export JULIA_NUM_THREADS={config[threads_build]}; "
-        "soft/CHOPOFF.jl/build/bin/CHOPOFF build "
-        "--name linearHashDB_{wildcards.prefix}_{wildcards.restrict_to_len}_{config[max_dist]}_Cas9_hg38v34 "
-        "--genome {input.genome} "
-        "-o out_dir/chopoff_out/db/linearHashDB_{wildcards.prefix}_{wildcards.restrict_to_len}_{config[max_dist]}/ "
-        "--distance {config[max_dist]} "
-        "--motif Cas9 linearHashDB --prefix_length {wildcards.prefix} --hash_length {wildcards.restrict_to_len}"
-
-
-rule chopoff_run_linearHashDB:
-    input:
-        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
-        db=str("out_dir/chopoff_out/db/linearHashDB_{prefix}_{restrict_to_len}_" f"{config['max_dist']}" "/linearHashDB.bin"),
-        guides="data/curated_guides_wo_PAM.txt"
-    output:
-        res="out_dir/chopoff_out/results/linearHashDB_{prefix}_{restrict_to_len}_{dist}.csv",
-        time="out_dir/chopoff_out/results/linearHashDB_{prefix}_{restrict_to_len}_{dist}_time.csv"
-    shell:
-        "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
-        "{{ /usr/bin/time  -f 'chopoff linearHashDB_{wildcards.restrict_to_len} {wildcards.dist} %e %U %S' {input.soft} "
-        "search "
-        "--database out_dir/chopoff_out/db/linearHashDB_{wildcards.prefix}_{wildcards.restrict_to_len}_{config[max_dist]}/ "
-        "--guides {input.guides} "
-        "--output {output.res} "
-        "--distance {wildcards.dist} "
-        "linearHashDB; }} 2> {output.time};"
-        "tail -1 {output.time} >> summary.txt;"
-
-
-rule chopoff_run_linearHashDB_with_es_max:
-    input:
-        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
-        db=str("out_dir/chopoff_out/db/linearHashDB_8_16_4/linearHashDB.bin"),
-        guides="data/curated_guides_wo_PAM.txt"
-    output:
-        res="out_dir/chopoff_out/results/linearHashDB_with_es_max_8_16_3.csv",
-        time="out_dir/chopoff_out/results/linearHashDB_with_es_max_8_16_3_time.csv"
-    shell:
-        "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
-        "{{ /usr/bin/time  -f 'chopoff linearHashDB_with_es_max_8_16 3 %e %U %S' {input.soft} "
-        "search "
-        "--database out_dir/chopoff_out/db/linearHashDB_8_16_4/ "
-        "--guides {input.guides} "
-        "--output {output.res} "
-        "--distance 3 "
-        "linearHashDB "
-        "--early_stopping 10000 10000 10000 10000; "
-        " }} 2> {output.time};"
-        "tail -1 {output.time} >> summary.txt;"
-
-
-rule chopoff_run_linearHashDB_with_es_min:
-    input:
-        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
-        db=str("out_dir/chopoff_out/db/linearHashDB_8_16_4/linearHashDB.bin"),
-        guides="data/curated_guides_wo_PAM.txt"
-    output:
-        res="out_dir/chopoff_out/results/linearHashDB_with_es_min_8_16_3.csv",
-        time="out_dir/chopoff_out/results/linearHashDB_with_es_min_8_16_3_time.csv"
-    shell:
-        "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
-        "{{ /usr/bin/time  -f 'chopoff linearHashDB_with_es_min_8_16 3 %e %U %S' {input.soft} "
-        "search "
-        "--database out_dir/chopoff_out/db/linearHashDB_8_16_4/ "
-        "--guides {input.guides} "
-        "--output {output.res} "
-        "--distance 3 "
-        "linearHashDB "
-        "--early_stopping 1 1 1 1; "
-        " }} 2> {output.time};"
-        "tail -1 {output.time} >> summary.txt;"
-
-
-rule early_stopping_max:
-    input:
-        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
-        db=str("out_dir/chopoff_out/db/linearDB_9_4/linearDB.bin"),
-        guides="data/curated_guides_wo_PAM.txt"
-    output:
-        res="out_dir/chopoff_out/results/esMax_9_4.csv",
-        time="out_dir/chopoff_out/results/esMax_9_4_time.csv"
-    shell:
-        "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
-        "{{ /usr/bin/time  -f 'chopoff esMax 4 %e %U %S' {input.soft} "
-        "search "
-        "--database out_dir/chopoff_out/db/linearDB_9_4/ "
-        "--guides {input.guides} "
-        "--output {output.res} "
-        "--distance 4 "
-        "linearDB "
-        "--early_stopping {wildcards.es}; "
-        "}} 2> {output.time};"
-        "tail -1 {output.time} >> summary.txt;"
- 
- 
-rule early_stopping_min:
-    input:
-        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
-        db=str("out_dir/chopoff_out/db/linearDB_9_4/linearDB.bin"),
-        guides="data/curated_guides_wo_PAM.txt"
-    output:
-        res="out_dir/chopoff_out/results/esMin_9_4.csv",
-        time="out_dir/chopoff_out/results/esMin_9_4_time.csv"
-    shell:
-        "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
-        "{{ /usr/bin/time  -f 'chopoff esMin 4 %e %U %S' {input.soft} "
-        "search "
-        "--database out_dir/chopoff_out/db/linearDB_9_4/ "
-        "--guides {input.guides} "
-        "--output {output.res} "
-        "--distance 4 "
-        "linearDB "
-        "--early_stopping {wildcards.es}; "
-        "}} 2> {output.time};"
-        "tail -1 {output.time} >> summary.txt;"
-
-
-rule early_stopping_one:
-    input:
-        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
-        db=str("out_dir/chopoff_out/db/linearDB_9_4/linearDB.bin"),
-        guides="data/curated_guides_wo_PAM.txt"
-    output:
-        res="out_dir/chopoff_out/results/esOne_9_4.csv",
-        time="out_dir/chopoff_out/results/esOne_9_4_time.csv"
-    shell:
-        "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
-        "{{ /usr/bin/time  -f 'chopoff esOne 1 %e %U %S' {input.soft} "
-        "search "
-        "--database out_dir/chopoff_out/db/linearDB_9_4/ "
-        "--guides {input.guides} "
-        "--output {output.res} "
-        "--distance 1 "
-        "linearDB "
-        "--early_stopping 1 1; "
-        "}} 2> {output.time};"
-        "tail -1 {output.time} >> summary.txt;"
-
-
-rule chopoff_build_dictDB:
-    input:
-        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
-        idx="data/hg38v34.fa.fai",
-        genome="data/hg38v34.fa"
-    output:
-        db="out_dir/chopoff_out/db/dictDB/dictDB.bin"
-    shell:
-        "export JULIA_NUM_THREADS={config[threads_build]}; mkdir -p $(dirname {output.db}); "
-        "soft/CHOPOFF.jl/build/bin/CHOPOFF build "
-        "--name dictDB_default_Cas9_hg38v34 "
-        "--genome {input.genome} "
-        "--output {output.db} "
-        "--distance 1 "
-        "--motif Cas9 dictDB"
-
-
-rule chopoff_build_hashDB:
-    input:
-        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
-        idx="data/hg38v34.fa.fai",
-        genome="data/hg38v34.fa"
-    output:
-        db="out_dir/chopoff_out/db/hashDB/hashDB.bin"
-    shell:
-        "export JULIA_NUM_THREADS={config[threads_build]}; mkdir -p $(dirname {output.db}); "
-        "soft/CHOPOFF.jl/build/bin/CHOPOFF build "
-        "--name hashDB_default_Cas9_hg38v34 "
-        "--genome {input.genome} "
-        "--output {output.db} "
-        "--distance 1 "
-        "--motif Cas9 hashDB"
-
-
-rule chopoff_run_dictDB:
-    input:
-        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
-        db=str("out_dir/chopoff_out/db/dictDB/dictDB.bin"),
-        guides="data/all_genes_only_guides.txt"
-    output:
-        res="out_dir/chopoff_out/results/dictDB.csv",
-        time="out_dir/chopoff_out/results/dictDB_time.csv"
-    shell:
-        "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
-        "{{ /usr/bin/time  -f 'chopoff dictDB 1 %e %U %S' {input.soft} "
-        "estimate "
-        "--database {input.db} "
-        "--guides {input.guides} "
-        "--output {output.res}; "
-        "}} 2> {output.time};"
-        "tail -1 {output.time} >> summary.txt;"
-
-
-rule chopoff_run_hashDB_right:
-    input:
-        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
-        db=str("out_dir/chopoff_out/db/hashDB/hashDB.bin"),
-        guides="data/all_genes_only_guides.txt"
-    output:
-        res="out_dir/chopoff_out/results/hashDB_right.csv",
-        time="out_dir/chopoff_out/results/hashDB_right_time.csv"
-    shell:
-        "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
-        "{{ /usr/bin/time  -f 'chopoff hashDB_right 1 %e %U %S' {input.soft} "
-        "estimate "
-        "--database {input.db} "
-        "--guides {input.guides} "
-        "--output {output.res} "
-        "--right; "
-        "}} 2> {output.time};"
-        "tail -1 {output.time} >> summary.txt;"
-
-
-rule chopoff_run_hashDB_left:
-    input:
-        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
-        db=str("out_dir/chopoff_out/db/hashDB/hashDB.bin"),
-        guides="data/all_genes_only_guides.txt"
-    output:
-        res="out_dir/chopoff_out/results/hashDB_left.csv",
-        time="out_dir/chopoff_out/results/hashDB_left_time.csv"
-    shell:
-        "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
-        "{{ /usr/bin/time  -f 'chopoff hashDB_left 1 %e %U %S' {input.soft} "
-        "estimate "
-        "--database {input.db} "
-        "--guides {input.guides} "
-        "--output {output.res}; "
-        "}} 2> {output.time};"
         "tail -1 {output.time} >> summary.txt;"
 
 
