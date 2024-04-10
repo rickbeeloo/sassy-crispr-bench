@@ -28,3 +28,14 @@ chopoff prefixHashDB_16 4 142.00 133.76 8.22
 chopoff prefixHashDB_16 0 10.75 9.11 1.63
 chopoff prefixHashDB_16 3 17.95 16.15 1.79
 chopoff prefixHashDB_16 1 10.62 9.06 1.56
+swoffinder search 3 3167.67 46783.77 237.13
+swoffinder search 3 3264.04 48184.24 244.14
+swoffinder search 2 3255.37 48069.63 241.29
+swoffinder search 1 3139.60 46373.39 235.94
+swoffinder search 4 3239.67 47823.41 252.49
+swoffinder search 0 3158.57 46651.07 239.81
+chopoff prefixHashDB_16 0 10.50 8.57 1.72
+chopoff prefixHashDB_16 3 17.04 15.16 1.88
+chopoff prefixHashDB_16 2 10.14 8.54 1.60
+chopoff prefixHashDB_16 4 136.59 128.48 8.10
+chopoff prefixHashDB_16 1 10.27 8.65 1.62

@@ -22,7 +22,11 @@ bash Mambaforge-Linux-x86_64.sh
 
 To execute the pipeline first build an environment (as per snakemake recommendations this step uses mamba):
 
-`mamba env create --name chopoff-benchmark --file environment.yaml`
+`mamba env create --name chopoff-benchmark --file environment.yaml` 
+
+or if above does not work you can try with
+
+` mamba create --name chopoff-benchmark -c conda-forge openjdk=17.0.3 snakemake seqkit python=3.8 crispritz`
 
 Activate the environment:
 
@@ -35,6 +39,9 @@ To run the pipeline end-to-end use the command:
 To run specific rules consult the rule you wish to execute and copy one of it's output files and run:
 
 `snakemake --cores 1 path/to/output.file`
+
+
+The snakemake should manage to install CHOPOFF, cas-offfinder and SWOFFinder.
 
 # Requirements
 

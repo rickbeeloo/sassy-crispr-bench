@@ -13,13 +13,13 @@ rule all:
         [  
             expand("out_dir/chopoff_out/results/prefixHashDB_{restrict_to_len}_{dist}_time.csv", 
                 restrict_to_len=config["restrict_to_len"], dist=config["dist"]),
-            #expand("out_dir/chopoff_out/results/bffDB_{restrict_to_len}_{dist}_time.csv", 
-            #    restrict_to_len=config["restrict_to_len"], dist=config["dist"]),
             expand("out_dir/chopoff_out/results/{db_kind}_{prefix}_{dist}_time.csv", 
                 db_kind=config["chopoff"], prefix=config["prefix"], dist=config["dist"]),
             expand("out_dir/crispritz_out/results/crispritz_{dist}_time.csv", 
                 dist=config["dist"]), 
             expand("out_dir/cas-offinder_out/results/casoffinder_{dist}_time.txt",
+                dist=config["dist"]),
+            expand("out_dir/swoffinder_out/results/swoffinder_{dist}_time.txt",
                 dist=config["dist"]),
         ]
 
@@ -283,4 +283,33 @@ rule run_casoff:
         "mkdir -p $(dirname {output.time}); touch {output.time}; "
         "{{ /usr/bin/time -f 'cas-offinder GPU {wildcards.dist} %e %U %S' ./soft/build/cas-offinder "
         "{input.guides} G {output.offt}; }} 2> {output.time};"
+        "tail -1 {output.time} >> summary.txt;"
+
+
+# SWOFfinder
+rule clone_and_build_swoffinder:
+    output:
+        "soft/SWOffinder/bin/SmithWatermanOffTarget/SmithWatermanOffTargetSearchAlign.class"
+    shell:
+        """
+        rm -rf soft/SWOffinder
+        git clone https://github.com/OrensteinLab/SWOffinder.git soft/SWOffinder
+        cd soft/SWOffinder
+        javac -d bin SmithWatermanOffTarget/*.java
+        """
+
+rule run_swoff:
+    input:
+        soft="soft/SWOffinder/bin/SmithWatermanOffTarget/SmithWatermanOffTargetSearchAlign.class",
+        guides="data/curated_guides_with_PAM.txt",
+        genome="data/hg38v34.fa"
+    output:
+        time="out_dir/swoffinder_out/results/swoffinder_{dist}_time.txt"
+    shell:
+        "mkdir -p $(dirname {output.time}); touch {output.time}; "
+        "{{ /usr/bin/time -f 'swoffinder search {wildcards.dist} %e %U %S' "
+        "java -cp soft/SWOffinder/bin SmithWatermanOffTarget.SmithWatermanOffTargetSearchAlign "
+        "{input.genome} {input.guides} out_dir/swoffinder_out/results/swoffinder_{wildcards.dist} {wildcards.dist} {wildcards.dist} {wildcards.dist} "
+        "{wildcards.dist} {config[threads_run]} false 23 NGG false"
+        "; }} 2> {output.time};"
         "tail -1 {output.time} >> summary.txt;"
