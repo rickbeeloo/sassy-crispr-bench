@@ -1,3 +1,7 @@
+data/clinvar.vcf.gz
+data/clinvar.vcf.gz.tbi
+data/clinvar_renamed_fixed.vcf.gz
+data/clinvar_renamed_fixed.vcf.gz.tbi
 data/chrom_split
 data/hg38v34.*
 data/cas_guides_input_*

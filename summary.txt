@@ -34,3 +34,8 @@ chopoff prefixHashDB_16 3 17.04 15.16 1.88
 chopoff prefixHashDB_16 2 10.14 8.54 1.60
 chopoff prefixHashDB_16 4 136.59 128.48 8.10
 chopoff prefixHashDB_16 1 10.27 8.65 1.62
+chopoff vcfDB_16 3 192.68 183.24 9.12
+chopoff vcfDB_16 4 1964.33 1875.81 88.39
+chopoff vcfDB_16 2 19.63 17.70 1.93
+chopoff vcfDB_16 0 3.22 2.18 1.04
+chopoff vcfDB_16 1 5.42 4.09 1.32

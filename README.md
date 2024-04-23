@@ -45,6 +45,8 @@ The snakemake should manage to install CHOPOFF, cas-offfinder and SWOFFinder.
 
 # Requirements
 
+Make sure that wget, tabix and bcftools are installed in your system.
+
 `config.yaml` contains default settings for the pipeline to run over. This pipeline should download all the files and work as is with simple `snakemake --cores 1`. It might take a loong time to perform all calculations, be aware. You need large disc space 
 of at least 60GB to perform all calculations.
 
