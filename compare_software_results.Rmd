@@ -1,0 +1,364 @@
+---
+title: 'Comparing software outputs'
+author: 'Kornel Labun'
+date: '`r format(Sys.time(), "%d %B %Y")`'
+output:
+  html_document:
+    toc: true
+    theme: paper
+    toc_float: true
+    number_sections: true
+---
+
+```{r load, message=FALSE, warning=FALSE, include=FALSE}
+library(data.table)
+library(ggplot2)
+library(rxtras)
+library(ggVennDiagram)
+library(dplyr)
+library(knitr)
+library(Biostrings)
+library(BSgenome.Hsapiens.UCSC.hg38)
+genome <- BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38
+
+comp_by <- c("guide", "distance", "chromosome", "strand", "start")
+comp_by_notD <- c("guide", "chromosome", "strand", "start")
+
+a <- fread("~/chopoff-benchmark/out_dir/chopoff_out/results/prefixHashDB_16_3.csv")
+a2 <- fread("~/chopoff-benchmark/out_dir/chopoff_out/results/linearDB_9_3.csv")
+a3 <- fread("~/chopoff-benchmark/out_dir/chopoff_out/results/treeDB_9_3.csv")
+a4 <- fread("~/chopoff-benchmark/out_dir/chopoff_out/results/motifDB_9_3.csv")
+
+linearDB_vs_treeDB <- dplyr::anti_join(a2, a3, by = comp_by)
+linearDB_vs_motifDB <- dplyr::anti_join(a2, a4, by = comp_by)
+linearDB_vs_prefixHashDB <- dplyr::anti_join(a2, a, by = comp_by)
+prefixHashDB_vs_linearDB <- dplyr::anti_join(a, a2, by = comp_by)
+rm(a3)
+rm(a4)
+rm(a2)
+```
+
+***
+
+# Compare CHOPOFF methods 
+
+***
+
+All methods from CHOPOFF return exactly the same results, despite different approach to
+the problem of off-target search.
+
+```{r display, message=FALSE, warning=FALSE, echo=TRUE}
+nrow(linearDB_vs_treeDB)
+nrow(linearDB_vs_motifDB)
+nrow(linearDB_vs_prefixHashDB)
+nrow(prefixHashDB_vs_linearDB)
+```
+
+
+
+***
+
+# Compare CHOPOFF to other methods
+
+***
+
+## Compare CHOPOFF to CRISPRitz
+
+```{r group ids, echo=FALSE, message=F, warning=FALSE}
+
+rm(linearDB_vs_motifDB)
+rm(linearDB_vs_prefixHashDB)
+rm(linearDB_vs_treeDB)
+rm(prefixHashDB_vs_linearDB)
+
+# crispritz results file is huge - 160GB (for dist 4) - we need to read it line by line and throw away
+# results that are too much...
+crispritz <- fread("~/chopoff-benchmark/out_dir/crispritz_out/results/crispritz_3.targets.txt")
+crispritz <- crispritz[crispritz$Total <= 3, ]
+crispritz$chromosome <- sapply(strsplit(crispritz$Chromosome, " "), `[[`, 1)
+crispritz$start <- crispritz$Position + 1
+temp <- crispritz$Position + nchar(crispritz$crRNA) - 
+  sapply(strsplit(crispritz$DNA, ""), function(x) sum(x == "-"))
+crispritz$start[crispritz$Direction == "+"]  <- temp[crispritz$Direction == "+"]
+temp <- strsplit(crispritz$crRNA, "")
+temp <- mapply(function(x, y){
+  xy <- x[1:(y-3)]
+  xy <- paste0(xy[xy != "-"], collapse = "")
+  xy
+}, temp, nchar(crispritz$crRNA))
+crispritz$guide <- temp
+rm(temp)
+colnames(crispritz)[7] <-"strand"
+colnames(crispritz)[10] <-"distance"
+
+# they return multiple of the same alignment - we will reduce to the alignments
+# by one position per distance per guide
+crispritz <- crispritz[!duplicated(crispritz[, ..comp_by, with = FALSE]), ]
+
+# now lets compare to CHOPOFF
+prefixHashDB_vs_crispritz <- dplyr::anti_join(a, crispritz, by = comp_by_notD)
+prefixHashDB_vs_crispritz <- prefixHashDB_vs_crispritz[
+  order(distance, guide, chromosome, strand, start), ]
+
+crispritz_vs_prefixHashDB <- dplyr::anti_join(crispritz, a, by = comp_by_notD)
+crispritz_vs_prefixHashDB <- crispritz_vs_prefixHashDB[
+  order(distance, guide, chromosome, strand, start), ]
+
+is_ok <- rep(FALSE, nrow(prefixHashDB_vs_crispritz))
+for (i in 1:nrow(prefixHashDB_vs_crispritz)) { # we will add +-5bp
+  i_row <- prefixHashDB_vs_crispritz[i, ]
+  cr_close <- 
+    crispritz[guide == i_row$guide & 
+                chromosome == i_row$chromosome & strand == i_row$strand
+              & start > (i_row$start - 5) & start < (i_row$start + 5), ]
+  is_ok[i] <- !isEmpty(cr_close)
+}
+prefixHashDB_vs_crispritz <- prefixHashDB_vs_crispritz[!is_ok, ]
+```
+
+
+We have loaded CRSIRPitz results and restricted it to maximum distance of 3, and
+removed duplicate alignments.
+
+Guides that CRISPRitz finds and CHOPOFF does not:
+```{r display2, message=FALSE, warning=FALSE, echo=TRUE}
+nrow(crispritz_vs_prefixHashDB)
+```
+
+As we can see, there are no such OTs. Now, OTs that CHOPOFF finds and 
+CRISPRitz does not:
+
+```{r display3, message=FALSE, warning=FALSE, echo=TRUE}
+nrow(prefixHashDB_vs_crispritz)
+```
+
+Here is the first line of that table:
+
+```{r display4, message=FALSE, warning=FALSE, echo=TRUE}
+prefixHashDB_vs_crispritz[1, ]
+```
+
+Lets check whether we parsed the crispritz table incorrectly, maybe only positions
+don't agree:
+
+```{r display5, message=FALSE, warning=FALSE, echo=TRUE}
+a1 <- crispritz[guide == "AAAAAAAATGTGTTTTACAT" & chromosome == "chr1" & strand == "+", ]
+knitr::kable(a1)
+```
+
+As we can see CRISPRitz seems to miss this OT. Lets confirm that this OT is real,
+by actually checking for the reference on the genome using Biostrings:
+
+```{r display6, message=FALSE, warning=FALSE, echo=TRUE}
+Biostrings::matchPattern("AAAAAAAATGTGTTTATACT", genome$chr1)
+```
+
+As we can see, this OT is simply not reported by CRISPRitz.
+
+## Compare CHOPOFF to SWOffinder
+
+```{r load_SWOF, echo=FALSE, message=F, warning=FALSE}
+
+# swof reports one file per guide...
+guides <- unique(a$guide)
+swof <- lapply(guides, function(g){
+  swof <- fread(paste0(
+    "~/chopoff-benchmark/out_dir/swoffinder_out/results/swoffinder_3_", 
+    g, "NGG.csv"))
+  swof$guide <- g
+  swof
+})
+swof <- rbindlist(swof)
+swof$chromosome <- sapply(strsplit(swof$Chromosome, "_"), `[[`, 1)
+colnames(swof)[2] <- "strand" 
+
+# 254 - we have 232 # 22 diff
+swof$start <- swof$EndPosition
+temp <- swof$EndPosition + 
+  sapply(strsplit(swof$AlignedText, ""), function(x) sum(x == "-")) -
+  sapply(strsplit(swof$AlignedTarget, ""), function(x) sum(x == "-")) - 22
+swof$start[swof$strand == "-"] <- temp[swof$strand == "-"]
+colnames(swof)[5] <- "distance"
+
+# now lets compare to CHOPOFF
+swoffinder_vs_prefixHashDB <- dplyr::anti_join(swof, a, by = comp_by_notD)
+# now we have similar issue I guess, only for some positions on minus strand
+prefixHashDB_vs_swoffinder <- dplyr::anti_join(a, swof, by = comp_by_notD)
+
+is_ok <- rep(FALSE, nrow(prefixHashDB_vs_swoffinder))
+for (i in 1:nrow(prefixHashDB_vs_swoffinder)) { # we will add +-5bp
+  i_row <- prefixHashDB_vs_swoffinder[i, ]
+  swof_close <- 
+    swof[guide == i_row$guide & 
+           chromosome == i_row$chromosome & strand == i_row$strand
+         & start > (i_row$start - 5) & start < (i_row$start + 5), ]
+  is_ok[i] <- !isEmpty(swof_close)
+}
+prefixHashDB_vs_swoffinder <- prefixHashDB_vs_swoffinder[!is_ok, ]
+```
+
+We have loaded SWOffinder results and adjusted postions to match CHOPOFF output
+strategy.
+
+Guides that SWOffinder finds and CHOPOFF does not:
+```{r display7, message=FALSE, warning=FALSE, echo=TRUE}
+nrow(swoffinder_vs_prefixHashDB)
+```
+
+As we can see, there are no such OTs. Now, OTs that CHOPOFF finds and 
+SWOffinder does not:
+
+```{r display8, message=FALSE, warning=FALSE, echo=TRUE}
+nrow(prefixHashDB_vs_swoffinder)
+```
+
+## Compare CHOPOFF to Cas-OFFinder
+
+```{r load_casoff, echo=FALSE, message=F, warning=FALSE}
+cof <- fread("~/chopoff-benchmark/out_dir/cas-offinder_out/results/casoffinder_3.txt")
+cof <- cof[!duplicated(cof), ] # a lot of perfect duplicates lol
+cof$distance <- cof$Mismatches + cof$`Bulge Size`
+cof <- cof[cof$distance <= 3, ]
+
+cof$chromosome <- sapply(strsplit(cof$Chromosome, " "), `[[`, 1)
+colnames(cof)[7] <- "strand" 
+temp <- strsplit(cof$crRNA, "")
+temp <- mapply(function(x, y){
+  xy <- x[1:(y-3)]
+  xy <- paste0(xy[xy != "-"], collapse = "")
+  xy
+}, temp, nchar(cof$crRNA))
+cof$guide <- temp
+cof <- cof[cof$guide != "CACTTTTCGACATAGTGTGG", ] 
+rm(temp)
+
+cof$start <- 0
+cof$start[cof$strand == "+"] <- cof$Location[cof$strand == "+"] + 23 +
+  sapply(strsplit(cof$crRNA[cof$strand == "+"], ""), function(x) sum(x == "-")) -
+  sapply(strsplit(cof$DNA[cof$strand == "+"], ""), function(x) sum(x == "-"))
+cof$start[cof$strand == "-"] <- cof$Location[cof$strand == "-"] - 2 +
+  sapply(strsplit(cof$crRNA[cof$strand == "-"], ""), function(x) sum(x == "-")) -
+  sapply(strsplit(cof$DNA[cof$strand == "-"], ""), function(x) sum(x == "-"))
+
+CasOFFinder_vs_prefixHashDB <- dplyr::anti_join(cof, a, by = comp_by_notD)
+# now we have similar issue I guess, only for some positions on minus strand
+prefixHashDB_vs_CasOFFinder <- dplyr::anti_join(a, cof, by = comp_by_notD)
+prefixHashDB_vs_CasOFFinder <- prefixHashDB_vs_CasOFFinder[
+  prefixHashDB_vs_CasOFFinder$guide != "CACTTTTCGACATAGTGTGG", ]
+# it seems that I have not rerun
+# the results after adding this one guide for this soft, but running time is so 
+# prohibitive that I cant do it again
+
+is_ok <- rep(FALSE, nrow(prefixHashDB_vs_CasOFFinder))
+for (i in 1:nrow(prefixHashDB_vs_CasOFFinder)) { # we will add +-5bp
+  i_row <- prefixHashDB_vs_CasOFFinder[i, ]
+  cof_close <- 
+    cof[guide == i_row$guide & 
+           chromosome == i_row$chromosome & strand == i_row$strand
+         & start > (i_row$start - 5) & start < (i_row$start + 5), ]
+  is_ok[i] <- !isEmpty(cof_close)
+}
+prefixHashDB_vs_CasOFFinder <- prefixHashDB_vs_CasOFFinder[!is_ok, ]
+```
+
+We have loaded CasOFFinder results and restricted it to maximum distance of 3, and
+removed duplicate alignments, fixed the positioning to match CHOPOFF.
+
+Guides that CasOFFinder finds and CHOPOFF does not:
+```{r display21, message=FALSE, warning=FALSE, echo=TRUE}
+nrow(CasOFFinder_vs_prefixHashDB)
+```
+
+As we can see, there are no such OTs. Now, OTs that CHOPOFF finds and 
+CasOFFinder does not:
+
+```{r display31, message=FALSE, warning=FALSE, echo=TRUE}
+nrow(prefixHashDB_vs_CasOFFinder)
+```
+
+Here is the first line of that table:
+
+```{r display41, message=FALSE, warning=FALSE, echo=TRUE}
+prefixHashDB_vs_CasOFFinder[1, ]
+```
+
+Lets check whether we parsed the CasOFFinder table incorrectly, maybe only positions
+don't agree:
+
+```{r display51, message=FALSE, warning=FALSE, echo=TRUE}
+a1 <- cof[guide == "GGAAGACACACTGGCAGAAA" & chromosome == "chr4" & strand == "+", ]
+knitr::kable(a1)
+```
+
+As we can see CasOFFinder seems to miss this OT. Lets confirm that this OT is real,
+by actually checking for the reference on the genome using Biostrings:
+
+```{r display61, message=FALSE, warning=FALSE, echo=TRUE}
+Biostrings::matchPattern("GCATAGACACACTGGAGAAA", genome$chr4)
+```
+
+As we can see, this OT is simply not reported by CasOFFinder
+
+***
+
+# Venn diagram of the results
+
+***
+
+```{r display511, message=FALSE, warning=FALSE, echo=FALSE}
+# number of OTs that Cas-OFFinder finds that CRISPRitz does not
+CasOFFinder_vs_crispritz <- dplyr::anti_join(cof, crispritz, by = comp_by_notD)
+
+library(ggVennDiagram)
+library(rxtras)
+
+# because we did a lot of juggling and to ggVennDiagram we cant insert direct 
+# count values, we cant simply paste0 because positions are imperfect it seems
+# but we know the following is true:
+# 25873 ots CHOPOFF and SWOffinder report the same - we will use CHOPOFF number of OTs
+# vs CRISPRitz 3058
+# vs casoffinder 10918
+# CRISPRitz vs casoff 0 - this makes it much simpler
+# casoff vs CRISPRitz 10918 - 3058 = 7860
+
+venn_set <- list(
+  CHOPOFF = 1:25873,
+  SWOffinder = 1:25873,
+  CRISPRitz = 1:(25873 - 3058),
+  `Cas-OFFinder` = 1:(25873 - 10918)
+)
+
+p <- ggVennDiagram(venn_set) +
+  scale_fill_gradient(low = "white", high = "#ffa6d5ff",
+                      limits = c(0, 14955),
+                      na.value = NA) +
+  theme(legend.position="none")
+as.pngpdf("offtargets_venn_diagram", p, dpi = 400, width = 7, height = 5)
+
+# p <- ggplot() +
+#   # 1. region count layer
+#   geom_polygon(
+#     aes(X, Y, group = id), fill = "white",
+#     data = venn_regionedge(data)) +
+#   # 2. set edge layer
+#   geom_path(aes(X, Y, color = id, group = id), 
+#           data = venn_setedge(data), 
+#           show.legend = FALSE) +
+#   scale_color_manual(
+#     values = c("#ffa6d5ff", "#9e9e9eff", "#c0eeac", "#92d9f7ff")) +
+#   # 3. set label layer
+#   geom_text(aes(X, Y, label = name), 
+#                data = venn_setlabel(data), 
+#             size = 6) +
+#   # 4. region label layer
+#   geom_label(aes(X, Y, label = count), 
+#                 data = venn_regionlabel(data)) +
+#   coord_equal() +
+#   theme_void(base_size = 24)
+# as.pngpdf("offtargets_venn_diagram", p, dpi = 400, width = 16, height = 12)
+print(p)
+```
+
+
+
+
