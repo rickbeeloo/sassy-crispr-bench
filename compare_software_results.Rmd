@@ -334,6 +334,8 @@ p <- ggVennDiagram(venn_set) +
                       na.value = NA) +
   theme(legend.position="none")
 as.pngpdf("offtargets_venn_diagram", p, dpi = 400, width = 7, height = 5)
+ggsave("offtargets_venn_diagram.svg", plot = p, scale = 1,
+       width = 7, height = 5, units = "in", dpi = 600, limitsize = FALSE)
 
 # p <- ggplot() +
 #   # 1. region count layer
