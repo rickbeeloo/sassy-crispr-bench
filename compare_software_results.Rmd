@@ -153,7 +153,20 @@ by actually checking for the reference on the genome using Biostrings:
 Biostrings::matchPattern("AAAAAAAATGTGTTTATACT", genome$chr1)
 ```
 
-As we can see, this OT is simply not reported by CRISPRitz.
+Lets confirm that PAM is also there:
+
+```{r CRISPRitz_example, message = FALSE, wanrning=FALSE, echo=TRUE}
+genome$chr1[58769308:58769330]
+```
+
+As we can see, this OT is simply not reported by CRISPRitz. Looking through unfound OTs
+it seems like they all have some sort of bulge on ref and gRNA.
+
+```{r ots_unfound_natrue, message = FALSE, wanrning=FALSE, echo=TRUE}
+sum(sapply(strsplit(prefixHashDB_vs_crispritz$alignment_guide, ""), 
+           function(x) any(x == "-")) & sapply(strsplit(prefixHashDB_vs_crispritz$alignment_reference, ""), 
+                                               function(x) any(x == "-"))) == nrow(prefixHashDB_vs_crispritz)
+```
 
 ## Compare CHOPOFF to SWOffinder
 
@@ -296,8 +309,13 @@ by actually checking for the reference on the genome using Biostrings:
 ```{r display61, message=FALSE, warning=FALSE, echo=TRUE}
 Biostrings::matchPattern("GCATAGACACACTGGAGAAA", genome$chr4)
 ```
+Check for PAM.
 
-As we can see, this OT is simply not reported by CasOFFinder
+```{r display62, message=FALSE, warning=FALSE, echo=TRUE}
+genome$chr4[63670941:63670963]
+```
+
+As we can see, this OT is simply not reported by CasOFFinder.
 
 ***
 

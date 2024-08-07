@@ -11,6 +11,7 @@
 
 <meta name="author" content="Kornel Labun" />
 
+<meta name="date" content="2024-08-07" />
 
 <title>Comparing software outputs</title>
 
@@ -1504,7 +1505,7 @@ border-radius: 0px;
 
 <h1 class="title toc-ignore">Comparing software outputs</h1>
 <h4 class="author">Kornel Labun</h4>
-<h4 class="date">21 mai 2024</h4>
+<h4 class="date">07 august 2024</h4>
 
 </div>
 
@@ -2124,7 +2125,17 @@ Biostrings:</p>
 ## views:
 ##          start      end width
 ##   [1] 58769308 58769327    20 [AAAAAAAATGTGTTTATACT]</code></pre>
-<p>As we can see, this OT is simply not reported by CRISPRitz.</p>
+<p>Lets confirm that PAM is also there:</p>
+<pre class="r"><code>genome$chr1[58769308:58769330]</code></pre>
+<pre><code>## 23-letter DNAString object
+## seq: AAAAAAAATGTGTTTATACTTGG</code></pre>
+<p>As we can see, this OT is simply not reported by CRISPRitz. Looking
+through unfound OTs it seems like they all have some sort of bulge on
+ref and gRNA.</p>
+<pre class="r"><code>sum(sapply(strsplit(prefixHashDB_vs_crispritz$alignment_guide, &quot;&quot;), 
+           function(x) any(x == &quot;-&quot;)) &amp; sapply(strsplit(prefixHashDB_vs_crispritz$alignment_reference, &quot;&quot;), 
+                                               function(x) any(x == &quot;-&quot;))) == nrow(prefixHashDB_vs_crispritz)</code></pre>
+<pre><code>## [1] TRUE</code></pre>
 </div>
 <div id="compare-chopoff-to-swoffinder" class="section level2" number="2.2">
 <h2><span class="header-section-number">2.2</span> Compare CHOPOFF to
@@ -2494,7 +2505,11 @@ using Biostrings:</p>
 ## views:
 ##          start      end width
 ##   [1] 63670941 63670960    20 [GCATAGACACACTGGAGAAA]</code></pre>
-<p>As we can see, this OT is simply not reported by CasOFFinder</p>
+<p>Check for PAM.</p>
+<pre class="r"><code>genome$chr4[63670941:63670963]</code></pre>
+<pre><code>## 23-letter DNAString object
+## seq: GCATAGACACACTGGAGAAAAGG</code></pre>
+<p>As we can see, this OT is simply not reported by CasOFFinder.</p>
 <hr />
 </div>
 </div>
