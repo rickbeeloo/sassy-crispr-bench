@@ -15,14 +15,10 @@ rule all:
                 restrict_to_len=config["restrict_to_len"], dist=config["dist"]),
             expand("out_dir/chopoff_out/results/{db_kind}_{prefix}_{dist}_time.csv", 
                 db_kind=config["chopoff"], prefix=config["prefix"], dist=config["dist"]),
-            expand("out_dir/crispritz_out/results/crispritz_{dist}_time.csv", 
-                dist=config["dist"]), 
-            expand("out_dir/cas-offinder_out/results/casoffinder_{dist}_time.txt",
-                dist=config["dist"]),
             expand("out_dir/swoffinder_out/results/swoffinder_{dist}_time.txt",
                 dist=config["dist"]),
-            expand("out_dir/chopoff_out/results/vcfDB_{restrict_to_len}_{dist}_time.csv", 
-                restrict_to_len=config["restrict_to_len"], dist=config["dist"]),
+            expand("out_dir/sassy_out/results/sassy_{dist}_time.txt",
+                dist=config["dist"]),
         ]
 
 
@@ -53,6 +49,40 @@ rule download_genome:
         """
 
 
+## Sassy
+rule clone_and_build_sassy:
+    output:
+        "soft/sassy/sassy"
+    shell:
+        """
+        rm -rf soft/sassy
+        git clone https://github.com/RagnarGrootKoerkamp/sassy.git soft/sassy
+        cd soft/sassy
+        cargo build --release
+        """
+rule run_sassy:
+    input:
+        soft="soft/sassy/sassy",
+        guides="data/curated_guides_wo_PAM.txt",
+        genome="data/hg38v34.fa"
+    output:
+        res="out_dir/sassy_out/results/sassy_{dist}.txt",
+        time="out_dir/sassy_out/results/sassy_{dist}_time.txt"
+    threads: config["threads_run"]
+    shell:
+        "mkdir -p $(dirname {output.time}); touch {output.time}; "
+        "{{ /usr/bin/time -f 'sassy {wildcards.dist} %e %U %S' "
+        "{input.soft} crispr "
+        "-g {input.guides} "
+        "-k {wildcards.dist} "
+        "-t {input.genome} "
+        "-o {output.res} "
+        "-j {threads} "
+        "-n 0.0"
+        "; }} 2> {output.time};"
+        "tail -1 {output.time} >> summary.txt;"
+
+
 ## CHOPOFF.jl
 rule clone_and_build_chopoff:
     output:
@@ -73,21 +103,21 @@ rule chopoff_build_trio:
         idx="data/hg38v34.fa.fai",
         genome="data/hg38v34.fa"
     output:
-        db=str("out_dir/chopoff_out/db/{db_kind}_{prefix}_" f"{config['max_dist']}" "/{db_kind}.bin")
+        db=str("out_dir/chopoff_out/db/{db_kind}_{prefix}_{dist}/{db_kind}.bin")
     shell:
         "export JULIA_NUM_THREADS={config[threads_build]}; "
         "soft/CHOPOFF.jl/build/bin/CHOPOFF build "
-        "--name {wildcards.db_kind}_{wildcards.prefix}_{config[max_dist]}_Cas9_hg38v34 "
+        "--name {wildcards.db_kind}_{wildcards.prefix}_{wildcards.dist}_Cas9_hg38v34 "
         "--genome {input.genome} "
-        "-o out_dir/chopoff_out/db/{wildcards.db_kind}_{wildcards.prefix}_{config[max_dist]}/ "
-        "--distance {config[max_dist]} "
+        "-o out_dir/chopoff_out/db/{wildcards.db_kind}_{wildcards.prefix}_{wildcards.dist}/ "
+        "--distance {wildcards.dist} "
         "--motif Cas9 {wildcards.db_kind} --prefix_length {wildcards.prefix}"
 
 
 rule chopoff_run_trio:
     input:
         soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
-        db=str("out_dir/chopoff_out/db/{db_kind}_{prefix}_" f"{config['max_dist']}" "/{db_kind}.bin"),
+        db=str("out_dir/chopoff_out/db/{db_kind}_{prefix}_{dist}/{db_kind}.bin"),
         guides="data/curated_guides_wo_PAM.txt"
     output:
         res="out_dir/chopoff_out/results/{db_kind}_{prefix}_{dist}.csv",
@@ -96,7 +126,7 @@ rule chopoff_run_trio:
         "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
         "{{ /usr/bin/time  -f 'chopoff {wildcards.db_kind} {wildcards.dist} %e %U %S' {input.soft} "
         "search "
-        "--database out_dir/chopoff_out/db/{wildcards.db_kind}_{wildcards.prefix}_{config[max_dist]}/ "
+        "--database out_dir/chopoff_out/db/{wildcards.db_kind}_{wildcards.prefix}_{wildcards.dist}/ "
         "--guides {input.guides} "
         "--output {output.res} "
         "--distance {wildcards.dist} "
@@ -110,21 +140,21 @@ rule chopoff_build_prefixHashDB:
         idx="data/hg38v34.fa.fai",
         genome="data/hg38v34.fa"
     output:
-        db=str("out_dir/chopoff_out/db/prefixHashDB_{restrict_to_len}_" f"{config['max_dist']}" "/prefixHashDB.bin")
+        db=str("out_dir/chopoff_out/db/prefixHashDB_{restrict_to_len}_{dist}/prefixHashDB.bin")
     shell:
         "export JULIA_NUM_THREADS={config[threads_build]}; "
         "soft/CHOPOFF.jl/build/bin/CHOPOFF build "
-        "--name prefixHashDB_{wildcards.restrict_to_len}_{config[max_dist]}_Cas9_hg38v34 "
+        "--name prefixHashDB_{wildcards.restrict_to_len}_{wildcards.dist}_Cas9_hg38v34 "
         "--genome {input.genome} "
-        "-o out_dir/chopoff_out/db/prefixHashDB_{wildcards.restrict_to_len}_{config[max_dist]}/ "
-        "--distance {config[max_dist]} "
+        "-o out_dir/chopoff_out/db/prefixHashDB_{wildcards.restrict_to_len}_{wildcards.dist}/ "
+        "--distance {wildcards.dist} "
         "--motif Cas9 prefixHashDB --hash_length {wildcards.restrict_to_len}"
 
 
 rule chopoff_run_prefixHashDB:
     input:
         soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
-        db=str("out_dir/chopoff_out/db/prefixHashDB_{restrict_to_len}_" f"{config['max_dist']}" "/prefixHashDB.bin"),
+        db=str("out_dir/chopoff_out/db/prefixHashDB_{restrict_to_len}_{dist}/prefixHashDB.bin"),
         guides="data/curated_guides_wo_PAM.txt"
     output:
         res="out_dir/chopoff_out/results/prefixHashDB_{restrict_to_len}_{dist}.csv",
@@ -133,7 +163,7 @@ rule chopoff_run_prefixHashDB:
         "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
         "{{ /usr/bin/time  -f 'chopoff prefixHashDB_{wildcards.restrict_to_len} {wildcards.dist} %e %U %S' {input.soft} "
         "search "
-        "--database out_dir/chopoff_out/db/prefixHashDB_{wildcards.restrict_to_len}_{config[max_dist]}/ "
+        "--database out_dir/chopoff_out/db/prefixHashDB_{wildcards.restrict_to_len}_{wildcards.dist}/ "
         "--guides {input.guides} "
         "--output {output.res} "
         "--distance {wildcards.dist} "
@@ -199,7 +229,6 @@ rule chopoff_run_bff:
 
 
 
-## CRISPRITz
 # installed through conda environment
 rule split_genome:
     input:
@@ -211,106 +240,6 @@ rule split_genome:
         seqkit split -O data/chrom_split -i < {input.genome}
         rename 's/.fasta$/.fa/' data/chrom_split/*.fasta
         """
-
-
-# also build once for largest distance
-rule crispritz_index:
-    input:
-        "data/chrom_split/stdin.part_chr1.fa",
-        pam="data/20bp-NGG-SpCas9.txt"
-    output:
-        "genome_library/NGG_{max_dist}_hg38v34_{max_dist}_ref/NGG_chr1 1_1.bin"
-    shell:
-        "crispritz.py index-genome hg38v34_{config[max_dist]}_ref data/chrom_split/ {input.pam}  -bMax {config[max_dist]} -th {config[threads_run]}"
-
-
-# this tool requiries first of all a split gneome - we already have that
-# second of all split by chromosome vcf file!
-# makes a folder called "variants_genome" 
-# as we can see inside the INDELS_genome/change_version.txt
-# CRISPRitz indels process is now obsolete and has been removed, if you want to process indels you can download our new tool CRISPRme, https://github.com/samuelecancellieri/CRISPRme
-# Thank you
-# therefore for only SNPs crispritz will have the same speed of running as for normal genome without indels
-rule crispritz_variant_genome:
-    input:
-        "data/clinvar_renamed_fixed.vcf.gz.tbi",
-        "data/chrom_split_with_variants/stdin.part_chr1.fa",
-        clinvar="data/clinvar_renamed_fixed.vcf.gz",
-        pam="data/20bp-NGG-SpCas9.txt"
-    output:
-        "data/chrom_split_with_variants/variants_genome/SNPs_genome/chrom_split_enriched/chr1 1.enriched.fa"
-    shell:
-        "mkdir data/chrom_split_with_variants"
-        "mkdir data/clinvar_split_with_variants"
-        "bcftools index -s {input.clinvar} | cut -f 1 | while read C; do bcftools view -O z -o data/clinvar_split_with_variants/split.${C}.vcf.gz {input.clinvar} '${C}'' ; done"
-        "for file in data/chrom_split/stdin.part_*; do mv '$file' 'data/chrom_split/${file#stdin.part_}'; done;"
-        "crispritz.py add-variants data/clinvar_split_with_variants data/chrom_split/"
-        "mv variants_genome data/chrom_split_with_variants"
-
-
-rule crispritz_search:
-    input:
-        index=expand("genome_library/NGG_{max_dist}_hg38v34_{max_dist}_ref/NGG_chr1 1_1.bin", max_dist=config["max_dist"]),
-        pam="data/20bp-NGG-SpCas9.txt",
-        guides="data/curated_guides_wo_PAM.txt"
-    output:
-        data="out_dir/crispritz_out/results/crispritz_{dist}.targets.txt",
-        time="out_dir/crispritz_out/results/crispritz_{dist}_time.csv"
-    shell:
-        "mkdir -p $(dirname {output.time}); touch {output.time}; "
-        "{{ /usr/bin/time -f 'CRISPRitz search {wildcards.dist} %e %U %S' crispritz.py "
-        "search "
-        "genome_library/NGG_{config[max_dist]}_hg38v34_{config[max_dist]}_ref/ {input.pam} {input.guides} "
-        "out_dir/crispritz_out/results/crispritz_{wildcards.dist} "
-        "-index hg38v34_{config[max_dist]}_ref -mm {wildcards.dist} -bMax {wildcards.dist} "
-        "-bDNA {wildcards.dist} -bRNA {wildcards.dist} -th {config[threads_run]} -r; }} 2> {output.time};"
-        "tail -1 {output.time} >> summary.txt;"
-
-
-
-# Cas-OFFinder
-# we don't install through conda as there exists newer version on github 
-# its unstable, but native bulges support should give it a chance in speed competition
-# install 
-
-rule download_casoff:
-    output:
-        "soft/build/cas-offinder"
-    shell:
-        """
-        wget https://github.com/snugel/cas-offinder/releases/download/3.0.0b3/cas-offinder_linux_x86_64.zip -O soft/cas-offinder_linux_x86-64.zip
-        unzip -q soft/cas-offinder_linux_x86-64 -d ./soft
-        rm soft/cas-offinder_linux_x86-64.zip
-        sudo chmod 764 {output}
-        """
-
-
-rule input_prep_casoff:
-    input:
-        "data/curated_guides_wo_PAM.txt"
-    output:
-        dist="data/cas_guides_input_dist{dist}.txt"
-    shell:
-        """
-        touch {output.dist}
-        echo data/hg38v34.fa >> {output.dist}
-        echo NNNNNNNNNNNNNNNNNNNNNGG {wildcards.dist} {wildcards.dist} >> {output.dist}
-        cat {input} | while read line; do echo ${{line}}'NNN {wildcards.dist}'; done >> {output.dist}
-        """
-
-
-rule run_casoff:
-    input:
-        soft="soft/build/cas-offinder",
-        guides="data/cas_guides_input_dist{dist}.txt"
-    output:
-        offt="out_dir/cas-offinder_out/results/casoffinder_{dist}.txt",
-        time="out_dir/cas-offinder_out/results/casoffinder_{dist}_time.txt"
-    shell:
-        "mkdir -p $(dirname {output.time}); touch {output.time}; "
-        "{{ /usr/bin/time -f 'cas-offinder GPU {wildcards.dist} %e %U %S' ./soft/build/cas-offinder "
-        "{input.guides} G {output.offt}; }} 2> {output.time};"
-        "tail -1 {output.time} >> summary.txt;"
 
 
 # SWOFfinder
@@ -341,59 +270,3 @@ rule run_swoff:
         "; }} 2> {output.time};"
         "tail -1 {output.time} >> summary.txt;"
 
-
-# VCF benchamrks
-# clinvar seems small enough to test
-rule get_clinvar:
-    output:
-        "data/clinvar_renamed_fixed.vcf.gz",
-        "data/clinvar_renamed_fixed.vcf.gz.tbi"
-    shell: 
-        """
-        cd data
-        wget https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh38/clinvar.vcf.gz
-        wget https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh38/clinvar.vcf.gz.tbi
-        bcftools annotate --rename-chrs chr_name_conversion.txt clinvar.vcf.gz --remove INFO --threads 15 --regions 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,21,X,Y,MT | bgzip > clinvar_renamed_fixed.vcf.gz
-        tabix -p vcf clinvar_renamed_fixed.vcf.gz
-        rm clinvar.vcf.gz
-        rm clinvar.vcf.gz.tbi
-        """
-
-
-rule chopoff_build_vcfDB:
-    input:
-        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
-        idx="data/hg38v34.fa.fai",
-        genome="data/hg38v34.fa",
-        vcf="data/clinvar_renamed_fixed.vcf.gz",
-        tbi="data/clinvar_renamed_fixed.vcf.gz.tbi"
-    output:
-        db=str("out_dir/chopoff_out/db/vcfDB_{restrict_to_len}_" f"{config['max_dist']}" "/vcfDB.bin")
-    shell:
-        "export JULIA_NUM_THREADS={config[threads_build]}; "
-        "soft/CHOPOFF.jl/build/bin/CHOPOFF build "
-        "--name vcfDB_{wildcards.restrict_to_len}_{config[max_dist]}_Cas9_hg38v34 "
-        "--genome {input.genome} "
-        "-o out_dir/chopoff_out/db/vcfDB_{wildcards.restrict_to_len}_{config[max_dist]}/vcfDB.bin "
-        "--distance {config[max_dist]} "
-        "--motif Cas9 vcfDB --hash_length {wildcards.restrict_to_len} --vcf {input.vcf}"
-
-
-rule chopoff_run_vcfDB:
-    input:
-        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
-        db=str("out_dir/chopoff_out/db/vcfDB_{restrict_to_len}_" f"{config['max_dist']}" "/vcfDB.bin"),
-        guides="data/curated_guides_wo_PAM.txt"
-    output:
-        res="out_dir/chopoff_out/results/vcfDB_{restrict_to_len}_{dist}.csv",
-        time="out_dir/chopoff_out/results/vcfDB_{restrict_to_len}_{dist}_time.csv"
-    shell:
-        "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
-        "{{ /usr/bin/time  -f 'chopoff vcfDB_{wildcards.restrict_to_len} {wildcards.dist} %e %U %S' {input.soft} "
-        "search "
-        "--database out_dir/chopoff_out/db/vcfDB_{wildcards.restrict_to_len}_{config[max_dist]}//vcfDB.bin "
-        "--guides {input.guides} "
-        "--output {output.res} "
-        "--distance {wildcards.dist} "
-        "vcfDB; }} 2> {output.time};"
-        "tail -1 {output.time} >> summary.txt;"
