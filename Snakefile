@@ -3,8 +3,6 @@ import sys
 configfile: "config.yaml"
 
 wildcard_constraints:
-    db_kind="linearDB|treeDB|motifDB",
-    prefix="5|6|7|8|9|10",
     dist="0|1|2|3|4|5|6",
     restrict_to_len="14|15|16|17|18|19|20"
 
@@ -13,8 +11,6 @@ rule all:
         [  
             expand("out_dir/chopoff_out/results/prefixHashDB_{restrict_to_len}_{dist}_time.csv", 
                 restrict_to_len=config["restrict_to_len"], dist=config["dist"]),
-            expand("out_dir/chopoff_out/results/{db_kind}_{prefix}_{dist}_time.csv", 
-                db_kind=config["chopoff"], prefix=config["prefix"], dist=config["dist"]),
             expand("out_dir/swoffinder_out/results/swoffinder_{dist}_time.txt",
                 dist=config["dist"]),
             expand("out_dir/sassy_out/results/sassy_{dist}_time.txt",
@@ -60,6 +56,7 @@ rule clone_and_build_sassy:
         cd soft/sassy
         cargo build --release
         """
+
 rule run_sassy:
     input:
         soft="soft/sassy/sassy",
@@ -94,44 +91,6 @@ rule clone_and_build_chopoff:
         cd soft/CHOPOFF.jl
         ./build_standalone.sh
         """
-
-
-# this should only run for the largest distance once - other distances can then reuse
-rule chopoff_build_trio:
-    input:
-        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
-        idx="data/hg38v34.fa.fai",
-        genome="data/hg38v34.fa"
-    output:
-        db=str("out_dir/chopoff_out/db/{db_kind}_{prefix}_{dist}/{db_kind}.bin")
-    shell:
-        "export JULIA_NUM_THREADS={config[threads_build]}; "
-        "soft/CHOPOFF.jl/build/bin/CHOPOFF build "
-        "--name {wildcards.db_kind}_{wildcards.prefix}_{wildcards.dist}_Cas9_hg38v34 "
-        "--genome {input.genome} "
-        "-o out_dir/chopoff_out/db/{wildcards.db_kind}_{wildcards.prefix}_{wildcards.dist}/ "
-        "--distance {wildcards.dist} "
-        "--motif Cas9 {wildcards.db_kind} --prefix_length {wildcards.prefix}"
-
-
-rule chopoff_run_trio:
-    input:
-        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
-        db=str("out_dir/chopoff_out/db/{db_kind}_{prefix}_{dist}/{db_kind}.bin"),
-        guides="data/curated_guides_wo_PAM.txt"
-    output:
-        res="out_dir/chopoff_out/results/{db_kind}_{prefix}_{dist}.csv",
-        time="out_dir/chopoff_out/results/{db_kind}_{prefix}_{dist}_time.csv"
-    shell:
-        "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
-        "{{ /usr/bin/time  -f 'chopoff {wildcards.db_kind} {wildcards.dist} %e %U %S' {input.soft} "
-        "search "
-        "--database out_dir/chopoff_out/db/{wildcards.db_kind}_{wildcards.prefix}_{wildcards.dist}/ "
-        "--guides {input.guides} "
-        "--output {output.res} "
-        "--distance {wildcards.dist} "
-        "{wildcards.db_kind}; }} 2> {output.time};"
-        "tail -1 {output.time} >> summary.txt;"
 
 
 rule chopoff_build_prefixHashDB:
@@ -169,64 +128,6 @@ rule chopoff_run_prefixHashDB:
         "--distance {wildcards.dist} "
         "prefixHashDB; }} 2> {output.time};"
         "tail -1 {output.time} >> summary.txt;"
-
-
-#BINARY FUSE FILTER + FM-index
-rule chopoff_build_bff:
-    input:
-        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
-        idx="data/hg38v34.fa.fai",
-        genome="data/hg38v34.fa"
-    output:
-        db=str("out_dir/chopoff_out/db/bffDB_{restrict_to_len}_{dist}/BinaryFuseFilterDB.bin")
-    shell:
-        "export JULIA_NUM_THREADS={config[threads_build]}; "
-        "soft/CHOPOFF.jl/build/bin/CHOPOFF build "
-        "--name bffDB_{wildcards.restrict_to_len}_{wildcards.dist}_Cas9_hg38v34 "
-        "--genome {input.genome} "
-        "-o out_dir/chopoff_out/db/bffDB_{wildcards.restrict_to_len}_{wildcards.dist}/ "
-        "--distance {wildcards.dist} "
-        "--motif Cas9 bffDB --restrict_to_len {wildcards.restrict_to_len}"
-
-
-rule chopoff_build_fmi:
-    input:
-        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
-        idx="data/hg38v34.fa.fai",
-        genome="data/hg38v34.fa"
-    output:
-        db=str("out_dir/chopoff_out/db/fmi/genomeInfo.bin")
-    shell:
-        "export JULIA_NUM_THREADS={config[threads_build]}; "
-        "soft/CHOPOFF.jl/build/bin/CHOPOFF build "
-        "--name fmi_Cas9_hg38v34 "
-        "--genome {input.genome} "
-        "-o out_dir/chopoff_out/db/fmi/ "
-        "--distance 3 "
-        "--motif Cas9 fmi"
-
-
-rule chopoff_run_bff:
-    input:
-        soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
-        db=[str("out_dir/chopoff_out/db/bffDB_{restrict_to_len}_{dist}/BinaryFuseFilterDB.bin"), "out_dir/chopoff_out/db/fmi/genomeInfo.bin"],
-        genome="data/hg38v34.fa",
-        guides="data/curated_guides_wo_PAM.txt"
-    output:
-        res="out_dir/chopoff_out/results/bffDB_{restrict_to_len}_{dist}.csv",
-        time="out_dir/chopoff_out/results/bffDB_{restrict_to_len}_{dist}_time.csv"
-    shell:
-        "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
-        "{{ /usr/bin/time  -f 'chopoff bffDB_{wildcards.restrict_to_len} {wildcards.dist} %e %U %S' {input.soft} "
-        "search "
-        "--database out_dir/chopoff_out/db/bffDB_{wildcards.restrict_to_len}_{wildcards.dist}/ "
-        "--guides {input.guides} "
-        "--output {output.res} "
-        "--distance {wildcards.dist} bffDB "
-        "--fmiDB out_dir/chopoff_out/db/fmi/ --genome {input.genome}; }} "
-        "2> {output.time};"
-        "tail -1 {output.time} >> summary.txt;"
-
 
 
 # installed through conda environment
