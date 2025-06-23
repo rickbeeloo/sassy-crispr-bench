@@ -55,7 +55,7 @@ rule clone_and_build_sassy:
         rm -rf soft/sassy
         git clone https://github.com/RagnarGrootKoerkamp/sassy.git soft/sassy
         cd soft/sassy
-        cargo build --release
+        cargo build --release --target-dir soft/sassy
         """
 
 rule run_sassy:
