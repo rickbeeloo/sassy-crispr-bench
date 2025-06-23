@@ -45,8 +45,7 @@ rule download_genome:
         mv chm13v2.0.fa {output}
         """
 
-
-## Sassy
+# Sassy
 rule clone_and_build_sassy:
     output:
         "soft/sassy/sassy"
@@ -55,7 +54,8 @@ rule clone_and_build_sassy:
         rm -rf soft/sassy
         git clone https://github.com/RagnarGrootKoerkamp/sassy.git soft/sassy
         cd soft/sassy
-        cargo build --release --target-dir soft/sassy
+        cargo build --release
+        cp target/release/sassy ./sassy
         """
 
 rule run_sassy:
