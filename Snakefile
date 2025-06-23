@@ -9,12 +9,13 @@ wildcard_constraints:
 rule all:
     input:
         [  
+            expand("out_dir/sassy_out/results/sassy_{dist}_time.txt",
+                dist=config["dist"]),
             expand("out_dir/chopoff_out/results/prefixHashDB_{restrict_to_len}_{dist}_time.csv", 
                 restrict_to_len=config["restrict_to_len"], dist=config["dist"]),
             expand("out_dir/swoffinder_out/results/swoffinder_{dist}_time.txt",
                 dist=config["dist"]),
-            expand("out_dir/sassy_out/results/sassy_{dist}_time.txt",
-                dist=config["dist"]),
+           
         ]
 
 
