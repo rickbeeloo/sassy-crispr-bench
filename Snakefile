@@ -6,32 +6,32 @@ wildcard_constraints:
     dist="0|1|2|3|4|5|6",
     restrict_to_len="14|15|16|17|18|19|20"
 
-# rule all:
-#     input:
-#         # Sassy timing files for all dist
-#         expand("out_dir/sassy_out/results/sassy_{dist}_time.txt",
-#                dist=config["dist"]),
-        
-#         # Chopoff prefixHashDB build time files for all restrict_to_len and dist
-#         expand("out_dir/chopoff_out/results/prefixHashDB_build_{restrict_to_len}_{dist}_time.csv", 
-#                restrict_to_len=config["restrict_to_len"], dist=config["dist"]),
-        
-#         # Chopoff database files themselves to ensure building happens
-#         expand("out_dir/chopoff_out/db/prefixHashDB_{restrict_to_len}_{dist}/prefixHashDB.bin",
-#                restrict_to_len=config["restrict_to_len"], dist=config["dist"]),
-        
-#         # Chopoff search time files
-#         expand("out_dir/chopoff_out/results/prefixHashDB_{restrict_to_len}_{dist}_time.csv", 
-#                restrict_to_len=config["restrict_to_len"], dist=config["dist"]),
-        
-#         # SWOffinder timing files for all dist
-#         expand("out_dir/swoffinder_out/results/swoffinder_{dist}_time.txt",
-#                dist=config["dist"]),
-
 rule all:
     input:
+        # Sassy timing files for all dist
+        expand("out_dir/sassy_out/results/sassy_{dist}_time.txt",
+               dist=config["dist"]),
+        
+        # Chopoff prefixHashDB build time files for all restrict_to_len and dist
         expand("out_dir/chopoff_out/results/prefixHashDB_build_{restrict_to_len}_{dist}_time.csv", 
-               restrict_to_len=config["restrict_to_len"], dist=config["dist"])
+               restrict_to_len=config["restrict_to_len"], dist=config["dist"]),
+        
+        # Chopoff database files themselves to ensure building happens
+        expand("out_dir/chopoff_out/db/prefixHashDB_{restrict_to_len}_{dist}/prefixHashDB.bin",
+               restrict_to_len=config["restrict_to_len"], dist=config["dist"]),
+        
+        # Chopoff search time files
+        expand("out_dir/chopoff_out/results/prefixHashDB_{restrict_to_len}_{dist}_time.csv", 
+               restrict_to_len=config["restrict_to_len"], dist=config["dist"]),
+        
+        # SWOffinder timing files for all dist
+        expand("out_dir/swoffinder_out/results/swoffinder_{dist}_time.txt",
+               dist=config["dist"]),
+
+# rule all:
+#     input:
+#         expand("out_dir/chopoff_out/results/prefixHashDB_build_{restrict_to_len}_{dist}_time.csv", 
+#                restrict_to_len=config["restrict_to_len"], dist=config["dist"])
 
 
 rule dag:
