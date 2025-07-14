@@ -8,6 +8,8 @@ wildcard_constraints:
 
 rule all:
     input:
+        expand("out_dir/swoffinder_out/results/swoffinder_{dist}_time.txt",
+               dist=config["dist"]),
         # Sassy timing files for all dist
         expand("out_dir/sassy_out/results/sassy_{dist}_time.txt",
                dist=config["dist"]),
@@ -24,15 +26,8 @@ rule all:
         expand("out_dir/chopoff_out/results/prefixHashDB_{restrict_to_len}_{dist}_time.csv", 
                restrict_to_len=config["restrict_to_len"], dist=config["dist"]),
         
-        # SWOffinder timing files for all dist
-        expand("out_dir/swoffinder_out/results/swoffinder_{dist}_time.txt",
-               dist=config["dist"]),
-
-# rule all:
-#     input:
-#         expand("out_dir/chopoff_out/results/prefixHashDB_build_{restrict_to_len}_{dist}_time.csv", 
-#                restrict_to_len=config["restrict_to_len"], dist=config["dist"])
-
+        # # SWOffinder timing files for all dist
+       
 
 rule dag:
     output:
@@ -46,6 +41,7 @@ rule fa_index:
         "data/chm13v2.0.fa"
     output:
         "data/chm13v2.0.fa.fai"
+    threads: config["threads_run"] # Just to "lock" serial
     shell:
         "samtools faidx {input}"
 
@@ -53,6 +49,7 @@ rule fa_index:
 rule download_genome:
     output:
         "data/chm13v2.0.fa"
+    threads: config["threads_run"] # Just to "lock" serial
     shell: 
         """
         wget https://s3-us-west-2.amazonaws.com/human-pangenomics/T2T/CHM13/assemblies/analysis_set/chm13v2.0.fa.gz
@@ -64,6 +61,7 @@ rule download_genome:
 rule clone_and_build_sassy:
     output:
         "soft/sassy/sassy"
+    threads: config["threads_run"] # Just to "lock" serial
     shell:
         """
         rm -rf soft/sassy
@@ -100,13 +98,15 @@ rule run_sassy:
 rule clone_and_build_chopoff:
     output:
         "soft/CHOPOFF.jl/build/bin/CHOPOFF"
+    threads: config["threads_run"] # Just to "lock" serial
     shell:
-        """
-        rm -rf soft/CHOPOFF.jl
-        git clone https://github.com/JokingHero/CHOPOFF.jl soft/CHOPOFF.jl
-        cd soft/CHOPOFF.jl
-        ./build_standalone.sh
-        """
+        """"""
+        # """
+        # rm -rf soft/CHOPOFF.jl
+        # git clone https://github.com/JokingHero/CHOPOFF.jl soft/CHOPOFF.jl
+        # cd soft/CHOPOFF.jl
+        # ./build_standalone.sh
+        # """
 
 rule chopoff_build_prefixHashDB:
     input:
@@ -116,6 +116,7 @@ rule chopoff_build_prefixHashDB:
     output:
         db=str("out_dir/chopoff_out/db/prefixHashDB_{restrict_to_len}_{dist}/prefixHashDB.bin"),
         time="out_dir/chopoff_out/results/prefixHashDB_build_{restrict_to_len}_{dist}_time.csv"
+    threads: config["threads_run"] # Just to "lock" serial
     shell:
         "export JULIA_NUM_THREADS={config[threads_build]}; "
         "mkdir -p $(dirname {output.time}); touch {output.time}; "
@@ -138,8 +139,9 @@ rule chopoff_run_prefixHashDB:
     output:
         res="out_dir/chopoff_out/results/prefixHashDB_{restrict_to_len}_{dist}.csv",
         time="out_dir/chopoff_out/results/prefixHashDB_{restrict_to_len}_{dist}_time.csv"
+    threads: config["threads_run"]
     shell:
-        "export JULIA_NUM_THREADS={config[threads_run]}; mkdir -p $(dirname {output.time}); touch {output.time}; "
+        "export JULIA_NUM_THREADS={threads}; mkdir -p $(dirname {output.time}); touch {output.time}; "
         "{{ /usr/bin/time  -f 'chopoff prefixHashDB_{wildcards.restrict_to_len} {wildcards.dist} %e %U %S' {input.soft} "
         "search "
         "--database out_dir/chopoff_out/db/prefixHashDB_{wildcards.restrict_to_len}_{wildcards.dist}/ "
@@ -156,6 +158,7 @@ rule split_genome:
         genome="data/chm13v2.0.fa"
     output:
         "data/chrom_split/stdin.part_chr1.fa"
+    threads: config["threads_run"] # Just to "lock" serial
     shell:
         """
         seqkit split -O data/chrom_split -i < {input.genome}
@@ -167,6 +170,7 @@ rule split_genome:
 rule clone_and_build_swoffinder:
     output:
         "soft/SWOffinder/bin/SmithWatermanOffTarget/SmithWatermanOffTargetSearchAlign.class"
+    threads: config["threads_run"] # Just to "lock" serial
     shell:
         """
         rm -rf soft/SWOffinder
@@ -182,12 +186,13 @@ rule run_swoff:
         genome="data/chm13v2.0.fa"
     output:
         time="out_dir/swoffinder_out/results/swoffinder_{dist}_time.txt"
+    threads: config["threads_run"] 
     shell:
         "mkdir -p $(dirname {output.time}); touch {output.time}; "
         "{{ /usr/bin/time -f 'swoffinder search {wildcards.dist} %e %U %S' "
         "java -cp soft/SWOffinder/bin SmithWatermanOffTarget.SmithWatermanOffTargetSearchAlign "
         "{input.genome} {input.guides} out_dir/swoffinder_out/results/swoffinder_{wildcards.dist} {wildcards.dist} {wildcards.dist} {wildcards.dist} "
-        "{wildcards.dist} {config[threads_run]} false 23 NGG false"
+        "{wildcards.dist} {threads} false 23 NGG false"
         "; }} 2> {output.time};"
         "tail -1 {output.time} >> summary.txt;"
 
