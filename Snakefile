@@ -100,13 +100,12 @@ rule clone_and_build_chopoff:
         "soft/CHOPOFF.jl/build/bin/CHOPOFF"
     threads: config["threads_run"] # Just to "lock" serial
     shell:
-        """"""
-        # """
-        # rm -rf soft/CHOPOFF.jl
-        # git clone https://github.com/JokingHero/CHOPOFF.jl soft/CHOPOFF.jl
-        # cd soft/CHOPOFF.jl
-        # ./build_standalone.sh
-        # """
+        """
+        rm -rf soft/CHOPOFF.jl
+        git clone https://github.com/JokingHero/CHOPOFF.jl soft/CHOPOFF.jl
+        cd soft/CHOPOFF.jl
+        ./build_standalone.sh
+        """
 
 rule chopoff_build_prefixHashDB:
     input:
