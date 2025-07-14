@@ -38,24 +38,32 @@ rule dag:
 
 rule fa_index:
     input:
-        "data/chm13v2.0.fa"
+        "data/hg38v34.fa"
     output:
-        "data/chm13v2.0.fa.fai"
+        "data/hg38v34.fa.fai"
     threads: config["threads_run"] # Just to "lock" serial
     shell:
         "samtools faidx {input}"
 
 
+
 rule download_genome:
     output:
-        "data/chm13v2.0.fa"
+        "data/hg38v34.fa"
     threads: config["threads_run"] # Just to "lock" serial
-    shell: 
+    shell:
+        # Genome with N's 
         """
-        wget https://s3-us-west-2.amazonaws.com/human-pangenomics/T2T/CHM13/assemblies/analysis_set/chm13v2.0.fa.gz
-        gunzip chm13v2.0.fa.gz
-        mv chm13v2.0.fa {output}
+         wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_34/GRCh38.primary_assembly.genome.fa.gz
+        gunzip GRCh38.primary_assembly.genome.fa.gz
+        mv GRCh38.primary_assembly.genome.fa {output}
         """
+        # Genome without N's 
+        # """
+        # wget https://s3-us-west-2.amazonaws.com/human-pangenomics/T2T/CHM13/assemblies/analysis_set/hg38v34.fa.gz
+        # gunzip hg38v34.fa.gz
+        # mv hg38v34.fa {output}
+        # """
 
 # Sassy
 rule clone_and_build_sassy:
@@ -74,8 +82,8 @@ rule clone_and_build_sassy:
 rule run_sassy:
     input:
         soft="soft/sassy/sassy",
-        guides="data/curated_guides_with_PAM.txt",
-        genome="data/chm13v2.0.fa"
+        guides="data/test_guide_Ns_with_PAM.txt",
+        genome="data/hg38v34.fa"
     output:
         res="out_dir/sassy_out/results/sassy_{dist}.txt",
         time="out_dir/sassy_out/results/sassy_{dist}_time.txt"
@@ -110,8 +118,8 @@ rule clone_and_build_chopoff:
 rule chopoff_build_prefixHashDB:
     input:
         soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
-        idx="data/chm13v2.0.fa.fai",
-        genome="data/chm13v2.0.fa"
+        idx="data/hg38v34.fa.fai",
+        genome="data/hg38v34.fa"
     output:
         db=str("out_dir/chopoff_out/db/prefixHashDB_{restrict_to_len}_{dist}/prefixHashDB.bin"),
         time="out_dir/chopoff_out/results/prefixHashDB_build_{restrict_to_len}_{dist}_time.csv"
@@ -126,6 +134,7 @@ rule chopoff_build_prefixHashDB:
         "-o out_dir/chopoff_out/db/prefixHashDB_{wildcards.restrict_to_len}_{wildcards.dist}/ "
         "--distance {wildcards.dist} "
         "--motif Cas9 prefixHashDB --hash_length {wildcards.restrict_to_len}"
+        "--ambig_max 23"
         "; }} 2> {output.time}; "
         "tail -1 {output.time} >> summary.txt;"
 
@@ -134,7 +143,7 @@ rule chopoff_run_prefixHashDB:
     input:
         soft="soft/CHOPOFF.jl/build/bin/CHOPOFF",
         db=str("out_dir/chopoff_out/db/prefixHashDB_{restrict_to_len}_{dist}/prefixHashDB.bin"),
-        guides="data/curated_guides_wo_PAM.txt"
+        guides="data/test_guide_Ns_wo_PAM.txt"
     output:
         res="out_dir/chopoff_out/results/prefixHashDB_{restrict_to_len}_{dist}.csv",
         time="out_dir/chopoff_out/results/prefixHashDB_{restrict_to_len}_{dist}_time.csv"
@@ -154,7 +163,7 @@ rule chopoff_run_prefixHashDB:
 # installed through conda environment
 rule split_genome:
     input:
-        genome="data/chm13v2.0.fa"
+        genome="data/hg38v34.fa"
     output:
         "data/chrom_split/stdin.part_chr1.fa"
     threads: config["threads_run"] # Just to "lock" serial
@@ -181,8 +190,8 @@ rule clone_and_build_swoffinder:
 rule run_swoff:
     input:
         soft="soft/SWOffinder/bin/SmithWatermanOffTarget/SmithWatermanOffTargetSearchAlign.class",
-        guides="data/curated_guides_with_PAM.txt",
-        genome="data/chm13v2.0.fa"
+        guides="data/test_guide_Ns_with_PAM.txt",
+        genome="data/hg38v34.fa"
     output:
         time="out_dir/swoffinder_out/results/swoffinder_{dist}_time.txt"
     threads: config["threads_run"] 
